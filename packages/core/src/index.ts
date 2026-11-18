@@ -13,5 +13,8 @@
  */
 
 export * from './grading'
+import './grading/graders'
+import './grading/sql-graders'
+import './grading/python-graders'
 export * from './sql/engine'
 export * from './python/boot-python'

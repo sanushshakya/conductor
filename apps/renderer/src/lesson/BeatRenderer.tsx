@@ -8,7 +8,7 @@ import { getVisualizer } from '../visualizers/registry'
 import { grade } from '@conductor/core'
 import { sqlEngineFor } from '../sql/useSqlEngine'
 import { SqlPlayground } from '../sql/SqlPlayground'
-import { bootPython } from '@conductor/core'
+import { runLearnerCode } from '../python/run'
 import { host } from '../host'
 
 export interface BeatProps {
@@ -96,6 +96,7 @@ function useGrading(exercise: Exercise, props: BeatProps) {
         xp: exercise.xp ?? 25,
         host: host(),
         sqlEngineFor,
+        runCode: runLearnerCode,
       })
       setResult(graded)
       props.onExerciseGraded(exercise.id, graded)
@@ -126,13 +127,13 @@ function CodeExerciseBeat({
     setOutput(null)
   }
 
-  function run() {
-    const run = bootPython(code)
+  async function run() {
+    const outcome = await runLearnerCode(code)
     setOutput({
-      text: run.ok
-        ? run.stdout || '(the program ran, but printed nothing)'
-        : `${run.stdout}${run.error.message}\n  on line ${run.error.line}`,
-      ok: run.ok,
+      text: outcome.ok
+        ? outcome.stdout || '(the program ran, but printed nothing)'
+        : `${outcome.stdout}${outcome.stderr}`,
+      ok: outcome.ok,
     })
   }
 
@@ -151,7 +152,7 @@ function CodeExerciseBeat({
       <div className="mt-3 flex items-center gap-2">
         <button
           type="button"
-          onClick={run}
+          onClick={() => void run()}
           className="focus-ring rounded-md border border-ink-600 px-3 py-1.5 text-sm text-parchment-200 transition-colors hover:border-parchment-400"
         >
           Run

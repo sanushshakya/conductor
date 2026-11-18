@@ -162,3 +162,50 @@ test('a passing code exercise unlocks the lesson', async () => {
     expect(screen.getByRole('button', { name: /finish lesson/i })).toBeEnabled(),
   )
 })
+
+test('Track 0 code exercises still grade when no Python engine is available', async () => {
+  // The browser host reports the sidecar absent. Boot's interpreter must pick
+  // this up, or the first ten minutes of the course stop working.
+  const codeLesson = lesson({
+    beats: [
+      {
+        kind: 'code',
+        language: 'python',
+        exercise: {
+          id: 'offline-code',
+          prompt: 'Print hi.',
+          starter: '',
+          solution: 'print("hi")',
+          hints: ['a', 'b', 'c'],
+          grader: { kind: 'output-match', cases: [{ expected: 'hi' }] },
+        },
+      },
+    ],
+  })
+  render(<LessonPlayer lesson={codeLesson} onFinished={() => {}} />)
+  await userEvent.type(screen.getByRole('textbox'), 'print("hi")')
+  await userEvent.click(screen.getByRole('button', { name: /check my answer/i }))
+  await waitFor(() => expect(screen.getByRole('button', { name: /finish lesson/i })).toBeEnabled())
+})
+
+test('a real crash is reported, not retried against the Boot interpreter', async () => {
+  const codeLesson = lesson({
+    beats: [
+      {
+        kind: 'code',
+        language: 'python',
+        exercise: {
+          id: 'offline-crash',
+          prompt: 'Print hi.',
+          starter: 'print(missing)',
+          solution: 'print("hi")',
+          hints: ['a', 'b', 'c'],
+          grader: { kind: 'output-match', cases: [{ expected: 'hi' }] },
+        },
+      },
+    ],
+  })
+  render(<LessonPlayer lesson={codeLesson} onFinished={() => {}} />)
+  await userEvent.click(screen.getByRole('button', { name: /^run$/i }))
+  expect(await screen.findByText(/NameError/)).toBeInTheDocument()
+})

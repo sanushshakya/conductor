@@ -1,0 +1,666 @@
+track: fundamentals
+title: Fundamentals
+blurb: The seven things every program does.
+
+lessons:
+  - id: "1.1"
+    track: fundamentals
+    title: Values and names
+    estimate_minutes: 8
+    objectives:
+      - Store a value and use it later
+      - Predict what a variable holds at any point in a program
+    beats:
+      - kind: prose
+        body: |
+          Seven ideas. That is the whole of this track, and very nearly the
+          whole of programming — everything else is these seven, arranged.
+
+          1. Values and names
+          2. Text and numbers
+          3. Decisions
+          4. Repetition
+          5. Collections
+          6. Functions
+          7. Errors
+
+          You met the first one in Boot. A **name** is attached to a **value**:
+
+              severity = 4
+
+          The thing worth being precise about is that `=` is not a statement of
+          fact. It is an instruction: *work out the thing on the right, then
+          attach this name to it.* Which is why this is not nonsense:
+
+              severity = severity + 1
+
+          Right side first — `severity` is 4, so that is 5. Then the name moves
+          to point at 5. A mathematician would object to the line; a computer
+          just does it in order, the way it does everything.
+
+      - kind: code
+        language: python
+        intro: Three patients arrive. Track the count as each one does.
+        exercise:
+          id: fund-counter
+          prompt: |
+            Start waiting at 0, add 1 three times, and print the result after
+            each addition — one number per line.
+          starter: |
+            waiting = 0
+            print(waiting)
+          solution: |
+            waiting = 0
+            waiting = waiting + 1
+            print(waiting)
+            waiting = waiting + 1
+            print(waiting)
+            waiting = waiting + 1
+            print(waiting)
+          hints:
+            - The starter prints the number before anyone has arrived.
+            - 'Each arrival is the same line twice: add one, then print.'
+            - You should end up printing 1, then 2, then 3.
+          grader:
+            kind: python-output
+            cases:
+              - label: Counts up to three
+                expected: |
+                  1
+                  2
+                  3
+
+      - kind: prose
+        body: |
+          A good name is not decoration. `waiting` tells the next reader — who
+          is usually you, three weeks later — what the number means. `w` or
+          `temp` or `x` tells them nothing, and they will have to reconstruct it
+          from the surrounding lines.
+
+          This matters more when an agent is writing the code, not less. When
+          you hand an agent a function called `calculate_total`, it can infer
+          what you want. Hand it `proc_data` and it will guess, confidently.
+          Names are a large part of how you specify anything.
+
+      - kind: checkpoint
+        body: |
+          Values have names, assignment runs right-to-left, and names are the
+          cheapest documentation there is.
+        unlocks: Next, the two kinds of value you will use most.
+
+  - id: "1.2"
+    track: fundamentals
+    title: Text and numbers
+    estimate_minutes: 9
+    objectives:
+      - Tell a number apart from text that looks like a number
+      - Build a sentence out of values
+    beats:
+      - kind: prose
+        body: |
+          `9` and `"9"` are not the same thing, and the difference causes more
+          beginner bugs than any other single idea.
+
+          - `9` is a **number**. You can do arithmetic with it.
+          - `"9"` is **text** — a string. You can join it to other text.
+
+          Watch what the same operator does to each:
+
+              9 + 1       →  10
+              "9" + "1"   →  "91"
+
+          Neither is wrong. `+` means *add* for numbers and *join* for text,
+          and Python picks based on what it is given. Mix them and it refuses,
+          which is the `TypeError` you already fixed in Boot.
+
+          You convert with `int("9")` and `str(9)`.
+
+      - kind: prose
+        body: |
+          Building sentences out of values is constant, so Python has a short
+          form for it — the **f-string**:
+
+              name = "Ana"
+              severity = 4
+              print(f"{name} is severity {severity}")
+
+          The `f` before the quote mark means *format*. Anything inside `{}` is
+          worked out and dropped in. No `str()`, no `+`, no counting your
+          spaces.
+
+      - kind: code
+        language: python
+        intro: |
+          A patient's details arrive as three separate values. Turn them into
+          one line of text.
+        exercise:
+          id: fund-fstring
+          prompt: |
+            Print exactly: Ana Rai, severity 4, waiting 50 minutes
+          starter: |
+            name = "Ana Rai"
+            severity = 4
+            minutes = 50
+            print(name)
+          solution: |
+            name = "Ana Rai"
+            severity = 4
+            minutes = 50
+            print(f"{name}, severity {severity}, waiting {minutes} minutes")
+          hints:
+            - Use an f-string so you do not have to convert the numbers.
+            - Each value goes inside its own pair of braces.
+            - 'The commas and the word "minutes" are ordinary text inside the quotes.'
+          grader:
+            kind: python-output
+            cases:
+              - label: Prints the summary line
+                expected: "Ana Rai, severity 4, waiting 50 minutes"
+
+      - kind: code
+        language: python
+        intro: |
+          Now one that only works if you convert. The severity arrives as text,
+          because that is how data arrives from the outside world.
+        exercise:
+          id: fund-convert
+          prompt: |
+            severity is the text "4". Print the number that is one higher.
+          starter: |
+            severity = "4"
+            print(severity + 1)
+          solution: |
+            severity = "4"
+            print(int(severity) + 1)
+          hints:
+            - Run it. The error says exactly which two types will not mix.
+            - You cannot add a number to text — one of them has to change.
+            - 'Wrap it: int(severity) + 1'
+          grader:
+            kind: python-output
+            cases:
+              - label: Prints 5
+                expected: "5"
+
+      - kind: checkpoint
+        body: |
+          You can tell a number from text that looks like one, convert between
+          them, and build a sentence from values.
+        unlocks: Next, the program starts making choices.
+
+  - id: "1.3"
+    track: fundamentals
+    title: Decisions
+    estimate_minutes: 10
+    objectives:
+      - Choose between branches with if, elif and else
+      - Write a condition that is true for exactly the cases you mean
+    beats:
+      - kind: prose
+        body: |
+          Everything so far ran straight down the page. Real programs choose:
+
+              if severity >= 4:
+                  print("See immediately")
+              else:
+                  print("Can wait")
+
+          Three things to take in.
+
+          The **condition** — `severity >= 4` — is worked out first, and the
+          answer is always `True` or `False`. Nothing else.
+
+          The **colon** ends the question, and the **indentation** says which
+          lines belong to that branch. Python is one of the few languages where
+          the indentation *is* the structure rather than a politeness. Four
+          spaces, consistently.
+
+          `elif` chains further questions, and the first one that is true wins:
+
+              if severity >= 5:
+                  print("Resuscitation")
+              elif severity >= 4:
+                  print("Emergency")
+              else:
+                  print("Standard")
+
+          Order matters enormously here. Put the `>= 4` test first and the
+          severity-5 patients never reach their own branch — the program runs
+          perfectly and triages your most critical patients as merely urgent.
+
+      - kind: code
+        language: python
+        intro: |
+          Four triage levels. The severity is read from input, so your program
+          has to work for any of them.
+        exercise:
+          id: fund-triage-branches
+          prompt: |
+            Read a severity number, then print: Resuscitation for 5,
+            Emergency for 4, Urgent for 3, and Standard for anything lower.
+          starter: |
+            severity = int(input())
+            if severity >= 4:
+                print("Emergency")
+          solution: |
+            severity = int(input())
+            if severity >= 5:
+                print("Resuscitation")
+            elif severity >= 4:
+                print("Emergency")
+            elif severity >= 3:
+                print("Urgent")
+            else:
+                print("Standard")
+          hints:
+            - The starter catches 5 in the wrong branch. Which test runs first?
+            - Order your conditions from the most severe down.
+            - 'Four branches: if >= 5, elif >= 4, elif >= 3, else.'
+          grader:
+            kind: python-output
+            cases:
+              - label: Severity 5
+                stdin: "5\n"
+                expected: "Resuscitation"
+              - label: Severity 4
+                stdin: "4\n"
+                expected: "Emergency"
+              - label: Severity 3
+                stdin: "3\n"
+                expected: "Urgent"
+              - label: Severity 1
+                stdin: "1\n"
+                expected: "Standard"
+
+      - kind: checkpoint
+        body: |
+          Your program can choose, and you have seen how the order of
+          conditions silently changes the answer.
+        unlocks: Next, it does something more than once.
+
+  - id: "1.4"
+    track: fundamentals
+    title: Repetition
+    estimate_minutes: 11
+    objectives:
+      - Do something once for each item in a sequence
+      - Accumulate a result across a loop
+    beats:
+      - kind: prose
+        body: |
+          Three patients, three nearly identical lines. Three hundred patients
+          and the approach collapses.
+
+          A **loop** runs the same lines again with a different value each time:
+
+              for name in ["Ana", "Ben", "Cal"]:
+                  print(f"Calling {name}")
+
+          `name` is a fresh label for each item in turn. The indented lines run
+          once per item. If the list is empty, they run zero times — which is
+          correct, and surprises people.
+
+          The thing that makes loops hard to read on paper is that they happen
+          over time, and paper does not. Step through one.
+
+      - kind: visual
+        visualizer: loop-tracer
+        caption: One iteration at a time, with the variables as they stand at that moment.
+        config:
+          loop:
+            kind: for
+            variable: patient
+            over: ["Ana", "Ben", "Cal"]
+            print: "Calling {patient}"
+
+      - kind: prose
+        body: |
+          The second pattern you need is an **accumulator**: a variable that
+          lives outside the loop and is updated inside it.
+
+              total = 0
+              for minutes in [50, 20, 5]:
+                  total = total + minutes
+              print(total)
+
+          `total` has to be created *before* the loop. Create it inside and it
+          is reset on every pass, and your answer is the last item rather than
+          the sum — a bug that produces a plausible number, which is the worst
+          kind.
+
+      - kind: visual
+        visualizer: loop-tracer
+        caption: Watch `total` carry across iterations while `minutes` is replaced each time.
+        config:
+          loop:
+            kind: for
+            variable: minutes
+            over: [50, 20, 5]
+            accumulator: { name: total, start: 0, op: add }
+
+      - kind: code
+        language: python
+        intro: |
+          The waiting room, totalled and averaged.
+        exercise:
+          id: fund-loop-average
+          prompt: |
+            Given the waits below, print the total on one line and then the
+            average on the next. The average should print as a whole number of
+            minutes, rounded down.
+          starter: |
+            waits = [50, 20, 5, 35, 10]
+            total = 0
+            print(total)
+          solution: |
+            waits = [50, 20, 5, 35, 10]
+            total = 0
+            for minutes in waits:
+                total = total + minutes
+            print(total)
+            print(total // len(waits))
+          hints:
+            - The accumulator is already created. What is missing is the loop that feeds it.
+            - 'len(waits) gives you how many there are.'
+            - 'Whole-number division is //, so the average is total // len(waits).'
+          grader:
+            kind: python-output
+            cases:
+              - label: Total then average
+                expected: |
+                  120
+                  24
+
+      - kind: checkpoint
+        body: |
+          You can repeat work over a sequence and carry a result across the
+          iterations.
+        unlocks: Next, the idea that leads directly into databases.
+
+  - id: "1.5"
+    track: fundamentals
+    title: Collections
+    estimate_minutes: 12
+    objectives:
+      - Hold many values in a list and one record in a dictionary
+      - See why a list of dictionaries is a table
+    beats:
+      - kind: prose
+        body: |
+          A **list** is an ordered row of values:
+
+              waits = [50, 20, 5]
+              print(waits[0])     # 50 — positions start at 0
+              waits.append(35)    # add to the end
+              print(len(waits))   # 4
+
+          Positions starting at zero is not an arbitrary quirk; it is the cause
+          of the off-by-one error you caught in Boot, and it will keep being the
+          cause for the rest of your career.
+
+          A **dictionary** holds values under names rather than positions:
+
+              patient = {"name": "Ana", "severity": 4, "waiting_minutes": 50}
+              print(patient["severity"])   # 4
+
+          Use a list when you have many of the same thing. Use a dictionary when
+          you have one thing with several named parts.
+
+      - kind: prose
+        body: |
+          Now put them together, because this shape is the one everything else
+          in this course is built on:
+
+              patients = [
+                  {"name": "Ana", "severity": 4, "waiting_minutes": 50},
+                  {"name": "Ben", "severity": 2, "waiting_minutes": 20},
+                  {"name": "Cal", "severity": 5, "waiting_minutes": 5},
+              ]
+
+          Look at what that actually is. Every dictionary has the same keys. So:
+
+              a list      of dictionaries    with the same keys
+              ↓           ↓                  ↓
+              a table     of rows            with the same columns
+
+          **This is a table.** `patients` is a three-row table with the columns
+          `name`, `severity` and `waiting`. You are already doing the thing
+          databases do; Track 2 is about what happens when the table has to
+          outlive your program and hold forty thousand rows.
+
+          Remember this shape. It is the hinge the whole course turns on.
+
+      - kind: code
+        language: python
+        intro: Walk the table and pull one column out of it.
+        exercise:
+          id: fund-list-of-dicts
+          prompt: |
+            Print the name of every patient whose severity is 4 or higher, one
+            per line, in the order they appear.
+          starter: |
+            patients = [
+                {"name": "Ana", "severity": 4, "waiting_minutes": 50},
+                {"name": "Ben", "severity": 2, "waiting_minutes": 20},
+                {"name": "Cal", "severity": 5, "waiting_minutes": 5},
+            ]
+            for patient in patients:
+                print(patient["name"])
+          solution: |
+            patients = [
+                {"name": "Ana", "severity": 4, "waiting_minutes": 50},
+                {"name": "Ben", "severity": 2, "waiting_minutes": 20},
+                {"name": "Cal", "severity": 5, "waiting_minutes": 5},
+            ]
+            for patient in patients:
+                if patient["severity"] >= 4:
+                    print(patient["name"])
+          hints:
+            - The starter prints everyone. One of them should not be there.
+            - A decision goes inside the loop, so it is asked once per patient.
+            - 'Indent an if under the for, then print inside the if.'
+          grader:
+            kind: python-output
+            cases:
+              - label: Only the urgent patients
+                expected: |
+                  Ana
+                  Cal
+
+      - kind: checkpoint
+        body: |
+          A list holds many values, a dictionary holds one record, and a list of
+          dictionaries is a table — which is where Track 2 begins.
+        unlocks: Next, you give a name to a procedure.
+
+  - id: "1.6"
+    track: fundamentals
+    title: Functions
+    estimate_minutes: 11
+    objectives:
+      - Package a procedure behind a name and reuse it
+      - Write the kind of description an agent can act on
+    beats:
+      - kind: prose
+        body: |
+          A **function** is a procedure with a name:
+
+              def triage_label(severity):
+                  if severity >= 5:
+                      return "Resuscitation"
+                  elif severity >= 4:
+                      return "Emergency"
+                  return "Standard"
+
+              print(triage_label(4))
+
+          `def` starts the definition. `severity` is a **parameter** — a name
+          for whatever gets handed in. `return` sends a value back and stops the
+          function immediately.
+
+          Note that the last `return` needs no `else`: once an earlier `return`
+          fires, nothing after it runs.
+
+      - kind: prose
+        body: |
+          Functions earn their keep three times over. They let you write the
+          logic once; they let you test that logic on its own; and they give the
+          idea a name, which is how you think about it afterwards.
+
+          The third one is where this connects to directing an agent.
+
+          *"Write me something that sorts patients"* is a sentence an agent can
+          interpret forty ways. Compare:
+
+          > `triage_order(patients)` takes a list of patient dictionaries, each
+          > with `name`, `severity` and `waiting`. It returns a new list sorted
+          > by severity, highest first; patients with the same severity are
+          > ordered by who has waited longest. The original list is unchanged.
+
+          That is a specification. The name, the inputs, the output, the
+          ordering rule, the tie-break, and what it must not do. An agent can
+          execute that, and — more to the point — **you can check whether what
+          came back does it**, because every claim in it is testable.
+
+          Writing a function signature and writing an agent brief are the same
+          skill. That is not an analogy.
+
+      - kind: code
+        language: python
+        intro: |
+          Write the function from that specification. It is checked by calling
+          it, so only the behaviour matters.
+        exercise:
+          id: fund-function
+          prompt: |
+            Write triage_label(severity) returning "Resuscitation" for 5 or
+            more, "Emergency" for 4, "Urgent" for 3, and "Standard" below that.
+          starter: |
+            def triage_label(severity):
+                return "Standard"
+          solution: |
+            def triage_label(severity):
+                if severity >= 5:
+                    return "Resuscitation"
+                if severity >= 4:
+                    return "Emergency"
+                if severity >= 3:
+                    return "Urgent"
+                return "Standard"
+          hints:
+            - This is lesson 1.3's logic, with return instead of print.
+            - A return stops the function, so later lines only run if no earlier return fired.
+            - Highest severity first, then work down to the plain return at the end.
+          grader:
+            kind: python-unit
+            assertions:
+              - assert triage_label(5) == "Resuscitation"
+              - assert triage_label(7) == "Resuscitation"
+              - assert triage_label(4) == "Emergency"
+              - assert triage_label(3) == "Urgent"
+              - assert triage_label(1) == "Standard"
+
+      - kind: checkpoint
+        body: |
+          You can package a procedure behind a name, and you have seen that a
+          function signature and an agent brief are the same document.
+        unlocks: Next, the skill that outlasts every language you will learn.
+
+  - id: "1.7"
+    track: fundamentals
+    title: Reading failure
+    estimate_minutes: 10
+    objectives:
+      - Read a traceback from the bottom up
+      - Decide whether to prevent an error or handle it
+    beats:
+      - kind: prose
+        body: |
+          A traceback looks like a wall. It is actually a very short report, and
+          it is read **from the bottom**.
+
+              Traceback (most recent call last):
+                File "your program", line 7, in <module>
+                  print(average(waits))
+                File "your program", line 3, in average
+                  return total / len(values)
+              ZeroDivisionError: division by zero
+
+          Last line first: **what went wrong** — a division by zero. Then the
+          line above it: **where** — line 3, inside `average`. Then above that:
+          **who called it** — line 7.
+
+          So: `average` was called with something whose length is zero. An empty
+          list. The traceback told you the whole story in three lines, and most
+          people never read past the first.
+
+      - kind: prose
+        body: |
+          Two ways to deal with a failure, and the choice is a real one.
+
+          **Prevent it** when the bad case is expected and has an obvious right
+          answer:
+
+              def average(values):
+                  if len(values) == 0:
+                      return 0
+                  return sum(values) / len(values)
+
+          **Handle it** when the failure comes from outside your control — a
+          missing file, a dropped connection, text that was supposed to be a
+          number:
+
+              try:
+                  severity = int(text)
+              except ValueError:
+                  severity = 1
+
+          What you must not do is wrap everything in `try` and move on. An
+          error you swallowed is a bug that will surface later, further from its
+          cause, in something that looks unrelated.
+
+      - kind: code
+        language: python
+        intro: |
+          This function is correct until the waiting room is empty, which it is
+          every morning at six.
+        exercise:
+          id: fund-guard
+          prompt: |
+            Make average(values) return 0.0 for an empty list, and the mean
+            otherwise.
+          starter: |
+            def average(values):
+                return sum(values) / len(values)
+          solution: |
+            def average(values):
+                if len(values) == 0:
+                    return 0.0
+                return sum(values) / len(values)
+          hints:
+            - Run it with an empty list and read the last line of the traceback.
+            - Dividing by the length fails when the length is zero.
+            - Check for the empty case first and return 0.0 before you divide.
+          grader:
+            kind: python-unit
+            assertions:
+              - assert average([]) == 0.0
+              - assert average([10]) == 10.0
+              - assert average([50, 20, 5, 35, 10]) == 24.0
+              - assert average([1, 2]) == 1.5
+
+      - kind: prose
+        body: |
+          This is the lesson that pays off most in Track 4.
+
+          When an agent hands you forty lines, you will not read them like
+          prose. You will run them, and something will break, and the traceback
+          will point at a line you did not write. Reading it is the same skill
+          you just used — and it is the one that decides whether you are
+          directing the agent or being led by it.
+
+      - kind: checkpoint
+        body: |
+          That is all seven. Values, text and numbers, decisions, repetition,
+          collections, functions, and failure.
+        unlocks: The Patient Triage Sorter, then Track 2.

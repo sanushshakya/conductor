@@ -4,7 +4,9 @@ import { lintContent } from './lint-content'
 import { grade } from '@conductor/core'
 import '@conductor/core/grading/graders'
 import '@conductor/core/grading/sql-graders'
+import '@conductor/core/grading/python-graders'
 import { SqlEngine, setSqlWasmLocator } from '@conductor/core'
+import { createPythonRunner } from './python-runner'
 import type { Exercise, Lesson } from '@conductor/shared/content-schema'
 
 /**
@@ -43,6 +45,7 @@ export interface SolutionReport {
 setSqlWasmLocator((file) => resolve(process.cwd(), 'node_modules/sql.js/dist', file))
 
 const engines = new Map<string, SqlEngine>()
+const runCode = createPythonRunner()
 
 async function engineFor(contentDir: string, fixture: string): Promise<SqlEngine> {
   const key = `${contentDir}:${fixture}`
@@ -79,6 +82,7 @@ export async function gradeExercise(contentDir: string, exerciseId: string, subm
     exerciseId: exercise.id,
     xp: exercise.xp ?? 25,
     sqlEngineFor: (fixture) => engineFor(contentDir, fixture),
+    runCode,
   })
 }
 
@@ -107,6 +111,7 @@ export async function runAllSolutions(contentDir: string): Promise<SolutionRepor
         exerciseId: exercise.id,
         xp: exercise.xp ?? 25,
         sqlEngineFor: (fixture) => engineFor(contentDir, fixture),
+        runCode,
       })
 
       if (!result.passed) {

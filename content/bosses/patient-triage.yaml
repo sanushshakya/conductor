@@ -1,0 +1,233 @@
+id: patient-triage
+track: fundamentals
+title: "Boss: Patient Triage Sorter"
+estimate_minutes: 35
+brief: |
+  An emergency department has a waiting room and no system. You are going to
+  write the thing that decides who is seen next.
+
+  The rule is the one a real triage nurse uses: the sickest person goes first.
+  When two people are equally sick, the one who has been waiting longest goes
+  first — because otherwise someone with a severity of 2 waits all night while
+  a steady trickle of severity 3s arrives.
+
+  Everything you need is in Track 1: a list of dictionaries, a loop, a
+  decision, and a function with a name that says what it does.
+
+  Keep the output of the last criterion. Track 2 opens with exactly this data,
+  and the first thing it asks is what happens to it when your program ends.
+
+criteria:
+  - id: label
+    label: Severity becomes a label
+    exercise:
+      id: boss-triage-label
+      prompt: |
+        Write triage_label(severity) returning "Resuscitation" for 5 or more,
+        "Emergency" for 4, "Urgent" for 3, "Standard" for 2, and "Non-urgent"
+        for anything lower.
+      starter: |
+        def triage_label(severity):
+            return "Standard"
+      solution: |
+        def triage_label(severity):
+            if severity >= 5:
+                return "Resuscitation"
+            if severity == 4:
+                return "Emergency"
+            if severity == 3:
+                return "Urgent"
+            if severity == 2:
+                return "Standard"
+            return "Non-urgent"
+      hints:
+        - Five outcomes, so five branches — and the last one needs no condition.
+        - Deal with the most severe first and work down.
+        - A return ends the function, so later lines only run when no earlier one fired.
+      grader:
+        kind: python-unit
+        assertions:
+          - assert triage_label(9) == "Resuscitation"
+          - assert triage_label(5) == "Resuscitation"
+          - assert triage_label(4) == "Emergency"
+          - assert triage_label(3) == "Urgent"
+          - assert triage_label(2) == "Standard"
+          - assert triage_label(1) == "Non-urgent"
+
+  - id: count-waiting
+    label: Counting who is still waiting
+    exercise:
+      id: boss-triage-count
+      prompt: |
+        Write count_waiting(patients) returning how many patients have not been
+        seen. A patient is a dictionary with a "seen" key holding True or False.
+      starter: |
+        def count_waiting(patients):
+            return len(patients)
+      solution: |
+        def count_waiting(patients):
+            total = 0
+            for patient in patients:
+                if not patient["seen"]:
+                    total += 1
+            return total
+      hints:
+        - The starter counts everybody, seen or not.
+        - This is the accumulator pattern — a total outside the loop, added to inside it.
+        - 'Only count the patient when patient["seen"] is False.'
+      grader:
+        kind: python-unit
+        preamble: |
+          ROOM = [
+              {"name": "Ana", "severity": 4, "waiting_minutes": 50, "seen": False},
+              {"name": "Ben", "severity": 2, "waiting_minutes": 20, "seen": True},
+              {"name": "Cal", "severity": 5, "waiting_minutes": 5, "seen": False},
+          ]
+        assertions:
+          - assert count_waiting([]) == 0
+          - assert count_waiting(ROOM) == 2
+          - 'assert count_waiting([{"name": "X", "severity": 1, "waiting_minutes": 0, "seen": True}]) == 0'
+
+  - id: longest-wait
+    label: Who has waited longest
+    exercise:
+      id: boss-triage-longest
+      prompt: |
+        Write longest_wait(patients) returning the name of the patient who has
+        waited the longest. Return None when the list is empty.
+      starter: |
+        def longest_wait(patients):
+            return patients[0]["name"]
+      solution: |
+        def longest_wait(patients):
+            best = None
+            for patient in patients:
+                if best is None or patient["waiting_minutes"] > best["waiting_minutes"]:
+                    best = patient
+            if best is None:
+                return None
+            return best["name"]
+      hints:
+        - The starter crashes on an empty list, and ignores waiting time entirely.
+        - Keep a "best so far" variable and replace it when you find a longer wait.
+        - Start best as None, and handle that case before you return a name.
+      grader:
+        kind: python-unit
+        preamble: |
+          ROOM = [
+              {"name": "Ana", "severity": 4, "waiting_minutes": 50, "seen": False},
+              {"name": "Ben", "severity": 2, "waiting_minutes": 20, "seen": True},
+              {"name": "Cal", "severity": 5, "waiting_minutes": 5, "seen": False},
+          ]
+        assertions:
+          - assert longest_wait([]) is None
+          - assert longest_wait(ROOM) == "Ana"
+          - 'assert longest_wait([{"name": "Solo", "severity": 1, "waiting_minutes": 3, "seen": False}]) == "Solo"'
+
+  - id: order
+    label: The triage order itself
+    exercise:
+      id: boss-triage-order
+      prompt: |
+        Write triage_order(patients) returning a NEW list sorted by severity,
+        highest first. Patients with equal severity are ordered by who has
+        waited longest. The list passed in must not be modified.
+      starter: |
+        def triage_order(patients):
+            return patients
+      solution: |
+        def triage_order(patients):
+            return sorted(
+                patients,
+                key=lambda patient: (patient["severity"], patient["waiting_minutes"]),
+                reverse=True,
+            )
+      hints:
+        - 'sorted() returns a new list; .sort() changes the one you gave it. One of those is forbidden here.'
+        - A key that returns a tuple sorts by the first value, then by the second.
+        - 'Sort on (severity, waiting_minutes) with reverse=True.'
+      grader:
+        kind: python-unit
+        preamble: |
+          ROOM = [
+              {"name": "Ana", "severity": 4, "waiting_minutes": 50, "seen": False},
+              {"name": "Ben", "severity": 2, "waiting_minutes": 20, "seen": True},
+              {"name": "Cal", "severity": 5, "waiting_minutes": 5, "seen": False},
+          ]
+          TIED = [
+              {"name": "Early", "severity": 3, "waiting_minutes": 10, "seen": False},
+              {"name": "Late", "severity": 3, "waiting_minutes": 90, "seen": False},
+          ]
+          ORIGINAL = list(ROOM)
+        assertions:
+          - assert [p["name"] for p in triage_order(ROOM)] == ["Cal", "Ana", "Ben"]
+          - assert [p["name"] for p in triage_order(TIED)] == ["Late", "Early"]
+          - assert triage_order([]) == []
+          - assert ROOM == ORIGINAL
+
+  - id: report
+    label: The waiting room board
+    exercise:
+      id: boss-triage-report
+      prompt: |
+        Print one line per patient in triage order, formatted exactly as:
+        Cal - Resuscitation - waited 5 min
+      starter: |
+        patients = [
+            {"name": "Ana", "severity": 4, "waiting_minutes": 50, "seen": False},
+            {"name": "Ben", "severity": 2, "waiting_minutes": 20, "seen": True},
+            {"name": "Cal", "severity": 5, "waiting_minutes": 5, "seen": False},
+        ]
+
+        def triage_label(severity):
+            if severity >= 5:
+                return "Resuscitation"
+            if severity == 4:
+                return "Emergency"
+            if severity == 3:
+                return "Urgent"
+            if severity == 2:
+                return "Standard"
+            return "Non-urgent"
+
+        for patient in patients:
+            print(patient["name"])
+      solution: |
+        patients = [
+            {"name": "Ana", "severity": 4, "waiting_minutes": 50, "seen": False},
+            {"name": "Ben", "severity": 2, "waiting_minutes": 20, "seen": True},
+            {"name": "Cal", "severity": 5, "waiting_minutes": 5, "seen": False},
+        ]
+
+        def triage_label(severity):
+            if severity >= 5:
+                return "Resuscitation"
+            if severity == 4:
+                return "Emergency"
+            if severity == 3:
+                return "Urgent"
+            if severity == 2:
+                return "Standard"
+            return "Non-urgent"
+
+        ordered = sorted(
+            patients,
+            key=lambda patient: (patient["severity"], patient["waiting_minutes"]),
+            reverse=True,
+        )
+
+        for patient in ordered:
+            label = triage_label(patient["severity"])
+            print(f"{patient['name']} - {label} - waited {patient['waiting_minutes']} min")
+      hints:
+        - Two things are missing — the loop walks the unsorted list, and prints only a name.
+        - Sort first, into a new variable, then loop over that.
+        - 'An f-string builds the line: f"{name} - {label} - waited {minutes} min"'
+      grader:
+        kind: python-output
+        cases:
+          - label: The board, in triage order
+            expected: |
+              Cal - Resuscitation - waited 5 min
+              Ana - Emergency - waited 50 min
+              Ben - Standard - waited 20 min
