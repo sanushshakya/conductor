@@ -16,6 +16,7 @@ import './visualizers'
 import '@conductor/core/grading/graders'
 import '@conductor/core/grading/sql-graders'
 import '@conductor/core/grading/python-graders'
+import '@conductor/core/grading/api-graders'
 
 /**
  * The application shell: course spine on the left, the current lesson on the

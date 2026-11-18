@@ -36,7 +36,9 @@ function createSupervisor(userData: string): SidecarSupervisor {
     spawn: (command, args, env) =>
       spawn(command, args, {
         cwd: root,
-        env: { ...process.env, ...env },
+        // The sidecar serves the same hospital fixture the SQL track uses, so
+        // Track 3 recognises every column from Track 2.
+        env: { ...process.env, ...env, CONDUCTOR_CONTENT_DIR: contentRoot() },
         stdio: ['ignore', 'pipe', 'pipe'],
       }) as unknown as ChildLike,
     fetch: (url, init) => fetch(url, init as RequestInit),

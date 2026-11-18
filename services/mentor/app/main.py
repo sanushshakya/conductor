@@ -3,6 +3,8 @@
 from fastapi import Depends, FastAPI
 
 from .health import router as health_router
+from .grade_api import GradeApiRequest, grade_api
+from .hospital import router as hospital_router
 from .runner import RunRequest, run_python
 from .security import require_token
 
@@ -17,12 +19,19 @@ app = FastAPI(
 )
 
 app.include_router(health_router)
+app.include_router(hospital_router, dependencies=[Depends(require_token)])
 
 
 @app.get("/whoami", dependencies=[Depends(require_token)])
 def whoami() -> dict[str, str]:
     """Trivial authenticated route, used to prove the token gate works."""
     return {"service": "conductor-sidecar"}
+
+
+@app.post("/grade/api", dependencies=[Depends(require_token)])
+def grade(request: GradeApiRequest) -> dict[str, object]:
+    """Grades the learner's own running server."""
+    return grade_api(request.base_url, request.suite_id)
 
 
 @app.post("/run/python", dependencies=[Depends(require_token)])

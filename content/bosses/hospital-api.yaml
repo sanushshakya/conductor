@@ -1,0 +1,72 @@
+id: hospital-api
+track: api
+title: "Boss: Hospital API v1"
+estimate_minutes: 70
+brief: |
+  Build the hospital API yourself, on your own machine, and let the grader be
+  the client.
+
+  This one is different from every exercise so far. You are not typing into a
+  box — you are writing files, running a server, and leaving it running. The
+  grader opens a real connection to it and makes real requests, exactly as any
+  other program would.
+
+  **Set it up**
+
+  Make a folder, and in it a file called `main.py`. Then, in a terminal:
+
+      python3 -m venv .venv
+      source .venv/bin/activate
+      pip install "fastapi[standard]" uvicorn
+      uvicorn main:app --reload
+
+  Your server is now on `http://127.0.0.1:8000`. Open `/docs` in a browser to
+  see it.
+
+  **What it must do**
+
+  Use SQLite for storage — `import sqlite3` is in the standard library, and the
+  schema is the one you built in Track 2.
+
+  - `GET /patients` — a list, or an object with an `items` list
+  - `POST /patients` — creates one, returns **201** and the created record
+    including its `id`
+  - `GET /patients/{id}` — the record, or **404** when there is none
+  - `PATCH /patients/{id}` — amends only the fields sent, returns the updated
+    record
+  - `DELETE /patients/{id}` — removes it, returns **204**
+  - A `POST` with `date_of_birth` of `"01/01/1990"` must return **422**
+
+  **Then come back**, put your server's address in the box, and press check.
+  Eight criteria, each one a real request. Nothing is mocked.
+
+  If something fails, read which criterion and what it expected. That is the
+  loop you will use for the rest of your working life.
+
+criteria:
+  - id: crud
+    label: The full CRUD cycle, over real HTTP
+    exercise:
+      id: boss-api-crud
+      prompt: |
+        Enter the address your server is listening on, then press check.
+      starter: |
+        http://127.0.0.1:8000
+      solution: |
+        http://127.0.0.1:8000
+      hints:
+        - 'Is the server actually running? The terminal should say "Uvicorn running on ...".'
+        - 'The address needs the scheme and port, like http://127.0.0.1:8000 — and no trailing path.'
+        - 'Open http://127.0.0.1:8000/docs in a browser. If that page does not load, the grader cannot reach it either.'
+      grader:
+        kind: api-suite
+        suite_id: hospital-crud
+        criteria:
+          - GET /patients returns a list
+          - POST /patients returns 201 with the created record
+          - GET /patients/{id} returns the patient just created
+          - GET a missing patient returns 404
+          - POST with an invalid date returns 422
+          - PATCH changes only the fields sent
+          - DELETE removes the patient
+          - GET after DELETE returns 404

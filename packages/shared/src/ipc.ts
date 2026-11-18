@@ -27,6 +27,17 @@ export const IPC_EVENTS = Object.freeze({
   sidecarStatusChanged: 'conductor:sidecar:changed',
 } as const)
 
+/**
+ * Grading suites the sidecar can run against a learner's own server.
+ *
+ * Mirrored by `SUITES` in services/mentor/app/grade_api.py, which has a test
+ * pinning the same set. The harness checks that every `api-suite` grader in
+ * content names one of these, so a boss criterion cannot reference a suite
+ * that does not exist.
+ */
+export const API_SUITE_IDS = ['hospital-crud'] as const
+export type ApiSuiteId = (typeof API_SUITE_IDS)[number]
+
 export interface PythonRunRequest {
   code: string
   stdin?: string

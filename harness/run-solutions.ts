@@ -8,6 +8,7 @@ import '@conductor/core/grading/python-graders'
 import { SqlEngine, setSqlWasmLocator } from '@conductor/core'
 import { createPythonRunner } from './python-runner'
 import type { Exercise, Lesson } from '@conductor/shared/content-schema'
+import { API_SUITE_IDS } from '@conductor/shared'
 
 /**
  * The most important check in this repository.
@@ -105,6 +106,20 @@ export async function runAllSolutions(contentDir: string): Promise<SolutionRepor
   }
 
   for (const { lessonId, exercise } of graded) {
+    // An api-suite exercise is satisfied by a server the learner is running,
+    // not by a text submission, so there is no reference solution to execute.
+    // Its integrity is checked below instead: the suite it names must exist.
+    if (exercise.grader.kind === 'api-suite') {
+      if (!(API_SUITE_IDS as readonly string[]).includes(exercise.grader.suiteId)) {
+        failures.push({
+          lessonId,
+          exerciseId: exercise.id,
+          reason: `names grading suite "${exercise.grader.suiteId}", which the sidecar does not provide`,
+        })
+      }
+      continue
+    }
+
     total += 1
     try {
       const result = await grade(exercise.solution, exercise.grader, {

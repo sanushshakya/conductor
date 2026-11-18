@@ -1,0 +1,16 @@
+id: bad-boss
+track: api
+title: A boss naming a suite that does not exist
+estimate_minutes: 10
+brief: Nothing here is real.
+criteria:
+  - id: only
+    label: Impossible
+    exercise:
+      id: bad-api-ex
+      prompt: Enter your server address.
+      solution: http://127.0.0.1:8000
+      hints: ["a", "b", "c"]
+      grader:
+        kind: api-suite
+        suite_id: no-such-suite

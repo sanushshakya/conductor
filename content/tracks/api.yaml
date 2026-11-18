@@ -1,0 +1,883 @@
+track: api
+title: REST APIs
+blurb: Put your database on the internet, safely.
+
+lessons:
+  - id: "3.1"
+    track: api
+    title: What the internet actually is
+    estimate_minutes: 9
+    objectives:
+      - Describe a request and a response
+      - Explain why the server forgets you between requests
+    beats:
+      - kind: prose
+        body: |
+          Your hospital database works. It is also completely unreachable —
+          it lives inside one program, on one computer, and nothing else can
+          ask it anything.
+
+          Making it reachable means speaking **HTTP**, and HTTP is simpler than
+          its reputation. It is two messages:
+
+          - A **request**: "here is what I want".
+          - A **response**: "here is what you get".
+
+          That is the whole protocol. No conversation, no connection you hold
+          open, no memory. One letter, one reply.
+
+      - kind: visual
+        visualizer: http-trace
+        caption: Step through one request. Nothing is remembered between letters.
+
+      - kind: prose
+        body: |
+          The part that surprises people is the forgetting. HTTP is
+          **stateless**: the server handles your request and then has no idea
+          you exist. Your next request arrives as if from a stranger.
+
+          That sounds like a design flaw and is the opposite. Because no request
+          depends on a previous one, you can run twenty copies of your server
+          behind a load balancer and it simply works — any copy can answer any
+          request. Statelessness is why the web scales.
+
+          It is also why **every request must carry its own proof of who you
+          are**, which is lesson 3.9, and why the server can never assume the
+          client is telling the truth.
+
+      - kind: quiz
+        exercise:
+          id: api-stateless
+          prompt: A learner's server stores the logged-in user in a global variable.
+          solution: "[1,2]"
+          hints:
+            - What happens when a second person uses the server at the same time?
+            - What happens when the app is restarted, or a second copy is started?
+            - Two of these go wrong; the other two are fine either way.
+          grader:
+            kind: quiz
+            question: |
+              def login(name):
+                  global current_user
+                  current_user = name
+
+              What actually goes wrong?
+            options:
+              - "Nothing — the variable holds the name correctly"
+              - "A second person logging in replaces the first person's identity"
+              - "Running two copies of the server gives different answers depending on which one you reach"
+              - "The code will not run at all"
+            correct: [1, 2]
+            explanation: |
+              The server is shared. One global variable is one value for
+              everybody, so the last person to log in becomes everybody — and
+              with two copies running, your identity depends on which machine
+              happened to take your request.
+
+              This is a real bug that reaches production regularly, including
+              in code written by agents: it works perfectly for one user on one
+              machine, which is exactly how it gets tested.
+
+      - kind: checkpoint
+        body: |
+          HTTP is a request and a response, and the server remembers nothing
+          between them.
+        unlocks: Next, the mapping that makes REST click.
+
+  - id: "3.2"
+    track: api
+    title: The mapping
+    estimate_minutes: 8
+    objectives:
+      - Translate between HTTP verbs, CRUD, and SQL
+      - Pick the right verb for an operation
+    beats:
+      - kind: prose
+        body: |
+          Here is the table this whole track turns on. You already know the
+          right-hand column.
+
+              Verb      Means       CRUD      SQL
+              ────────────────────────────────────────
+              POST      create      Create    INSERT
+              GET       read        Read      SELECT
+              PUT       replace     Update    UPDATE
+              PATCH     amend       Update    UPDATE
+              DELETE    remove      Delete    DELETE
+
+          That is REST. An API is a set of **resources** — patients, doctors,
+          appointments — and the verb says what you are doing to one.
+
+          So the hospital you built in Track 2 becomes:
+
+              GET    /patients          every patient         SELECT * FROM patients
+              GET    /patients/7        one patient           SELECT ... WHERE id = 7
+              POST   /patients          admit one             INSERT INTO patients
+              PATCH  /patients/7        change one            UPDATE patients WHERE id = 7
+              DELETE /patients/7        remove one            DELETE FROM patients WHERE id = 7
+
+          The URL names the thing. The verb says what to do to it. If you ever
+          find yourself writing `POST /deletePatient`, you have put the verb in
+          the URL where the noun belongs.
+
+      - kind: prose
+        body: |
+          Two distinctions worth having now, because they come up in every code
+          review you will ever be in.
+
+          **GET must not change anything.** Browsers prefetch links, proxies
+          cache them, crawlers follow them. A `GET /patients/7/delete` will
+          eventually be followed by something that was just looking around.
+
+          **PUT replaces, PATCH amends.** `PUT` means "here is the whole new
+          version"; anything you leave out is gone. `PATCH` means "change just
+          these fields". Using `PUT` where you meant `PATCH` silently blanks
+          every field the client did not send — a data-loss bug that looks like
+          a working endpoint.
+
+      - kind: quiz
+        exercise:
+          id: api-verb-choice
+          prompt: You need to record that patient 7 has been discharged today.
+          solution: "[2]"
+          hints:
+            - You are changing one field of an existing patient, not creating or replacing one.
+            - Which verb means "amend what is already there"?
+            - PUT would blank everything you did not send.
+          grader:
+            kind: quiz
+            question: |
+              Which request records the discharge?
+            options:
+              - "POST /patients/7/discharge"
+              - "PUT /patients/7 with {\"discharged_on\": \"2026-11-18\"}"
+              - "PATCH /patients/7 with {\"discharged_on\": \"2026-11-18\"}"
+              - "GET /patients/7/discharge?date=2026-11-18"
+            correct: [2]
+            explanation: |
+              PATCH amends the fields you send and leaves the rest alone.
+
+              The PUT option is the dangerous one, because it looks right and
+              works in testing: PUT means "replace the whole patient with this",
+              so the name, date of birth and blood type would all be erased.
+
+              The POST option puts a verb in the URL, and the GET option uses a
+              read to make a change — which something will eventually trigger
+              by accident.
+
+      - kind: checkpoint
+        body: |
+          Verbs map to CRUD, CRUD maps to SQL, and the URL names the thing
+          rather than the action.
+        unlocks: Next, the format the data travels in.
+
+  - id: "3.3"
+    track: api
+    title: JSON
+    estimate_minutes: 7
+    objectives:
+      - Read and write JSON
+      - Explain why a dictionary cannot be sent directly
+    beats:
+      - kind: prose
+        body: |
+          A Python dictionary lives in one program's memory. To send it to
+          another program — possibly written in another language, on another
+          machine — it has to become text.
+
+          **JSON** is that text:
+
+              {
+                "id": 7,
+                "full_name": "Asha Rai",
+                "blood_type": null,
+                "admitted": true,
+                "appointments": [10, 11]
+              }
+
+          If it looks like a Python dictionary, that is because it very nearly
+          is one. Four differences worth knowing:
+
+          - Keys are **always** double-quoted strings.
+          - `None` is `null`, `True` is `true`, `False` is `false`.
+          - No trailing commas.
+          - No comments.
+
+          In Python, `json.dumps(value)` turns a dictionary into JSON text and
+          `json.loads(text)` turns it back. FastAPI does both for you, which is
+          most of why it is pleasant to use.
+
+      - kind: code
+        language: python
+        intro: |
+          A patient record arrives as JSON text, the way it would from a real
+          request. Turn it into something you can use.
+        exercise:
+          id: api-json-parse
+          prompt: |
+            Parse the JSON in `payload` and print the patient's full_name, then
+            on the next line print how many appointments they have.
+          starter: |
+            import json
+
+            payload = '{"id": 7, "full_name": "Asha Rai", "appointments": [10, 11]}'
+            print(payload)
+          solution: |
+            import json
+
+            payload = '{"id": 7, "full_name": "Asha Rai", "appointments": [10, 11]}'
+            record = json.loads(payload)
+            print(record["full_name"])
+            print(len(record["appointments"]))
+          hints:
+            - The starter prints the text itself, not the data inside it.
+            - 'json.loads() turns JSON text into a dictionary.'
+            - 'Then it is ordinary dictionary and list work: record["full_name"] and len(...).'
+          grader:
+            kind: python-output
+            cases:
+              - label: Name then appointment count
+                expected: |
+                  Asha Rai
+                  2
+
+      - kind: checkpoint
+        body: |
+          JSON is a dictionary that can travel. You can read it and write it.
+        unlocks: Next, your first endpoint.
+
+  - id: "3.4"
+    track: api
+    title: Your first endpoint
+    estimate_minutes: 11
+    objectives:
+      - Run a web server and serve one route
+      - Read the automatic documentation it generates
+    beats:
+      - kind: prose
+        body: |
+          Six lines, and you have a web server:
+
+              from fastapi import FastAPI
+
+              app = FastAPI()
+
+              @app.get("/patients")
+              def list_patients():
+                  return [{"id": 1, "full_name": "Asha Rai"}]
+
+          Line by line. `app = FastAPI()` makes the application. The
+          `@app.get("/patients")` above the function is a **decorator** — it
+          attaches the function to that URL and that verb. Returning a list or
+          dictionary is enough; FastAPI converts it to JSON and sets the
+          headers.
+
+          You start it from a terminal:
+
+              uvicorn main:app --reload
+
+          `uvicorn` is the web server, `main:app` means "the `app` object in
+          `main.py`", and `--reload` restarts it when you save.
+
+      - kind: prose
+        body: |
+          Now open `http://127.0.0.1:8000/docs` in a browser.
+
+          FastAPI generated an interactive page listing every endpoint, with
+          their shapes, and a button to try each one. You did not write it. It
+          is built from your function signatures and type hints, which is why
+          the type hints are worth writing.
+
+          This page is the single best thing about FastAPI for someone learning
+          — you can see and exercise your API without writing a client first.
+
+      - kind: code
+        language: python
+        intro: |
+          Routing is just a dictionary lookup. Write the lookup, and the shape
+          of every web framework stops being mysterious.
+        exercise:
+          id: api-routing
+          prompt: |
+            Write route(method, path) returning the handler name for:
+            GET /patients → "list_patients", POST /patients → "create_patient",
+            GET /patients/7 (any id) → "get_patient", and "404" for anything else.
+          starter: |
+            def route(method, path):
+                return "404"
+          solution: |
+            def route(method, path):
+                if path == "/patients":
+                    if method == "GET":
+                        return "list_patients"
+                    if method == "POST":
+                        return "create_patient"
+                    return "404"
+                if path.startswith("/patients/") and method == "GET":
+                    return "get_patient"
+                return "404"
+          hints:
+            - The method and the path together decide the handler — neither alone is enough.
+            - '/patients/7 and /patients/8 both go to the same handler, so match the prefix.'
+            - Handle the exact /patients path first, then the prefixed one, then fall through to 404.
+          grader:
+            kind: python-unit
+            assertions:
+              - 'assert route("GET", "/patients") == "list_patients"'
+              - 'assert route("POST", "/patients") == "create_patient"'
+              - 'assert route("GET", "/patients/7") == "get_patient"'
+              - 'assert route("GET", "/patients/999") == "get_patient"'
+              - 'assert route("DELETE", "/patients") == "404"'
+              - 'assert route("GET", "/doctors") == "404"'
+
+      - kind: checkpoint
+        body: |
+          You can serve a route, and you know routing is a lookup from method
+          and path to a function.
+        unlocks: Next, the client starts sending you things.
+
+  - id: "3.5"
+    track: api
+    title: Path and query parameters
+    estimate_minutes: 9
+    objectives:
+      - Take a value from the URL path
+      - Take optional values from the query string
+    beats:
+      - kind: prose
+        body: |
+          `/patients/7` has the id inside the URL. FastAPI hands it to you:
+
+              @app.get("/patients/{patient_id}")
+              def get_patient(patient_id: int):
+                  ...
+
+          The `{patient_id}` in the path and the parameter name must match. The
+          `: int` is doing real work: FastAPI converts the text to a number, and
+          if someone requests `/patients/banana` it returns a 422 before your
+          function runs at all.
+
+          **Query parameters** are the `?key=value` part, and they are for
+          options rather than identity:
+
+              @app.get("/patients")
+              def list_patients(limit: int = 50, admitted: bool = None):
+                  ...
+
+          A parameter with a default is optional; one without is required.
+
+          The rule for choosing: **path parameters identify, query parameters
+          modify.** `/patients/7` names a patient. `?limit=10` changes how the
+          answer is presented.
+
+      - kind: code
+        language: python
+        intro: |
+          Filtering a list by optional criteria is what a query string does, so
+          write that logic directly.
+        exercise:
+          id: api-query-filter
+          prompt: |
+            Write find_patients(patients, admitted=None, limit=None). When
+            admitted is True return only those with seen False; when False only
+            those with seen True; when None return all. Apply limit last, if given.
+          starter: |
+            def find_patients(patients, admitted=None, limit=None):
+                return patients
+          solution: |
+            def find_patients(patients, admitted=None, limit=None):
+                result = []
+                for patient in patients:
+                    if admitted is None:
+                        result.append(patient)
+                    elif admitted and not patient["seen"]:
+                        result.append(patient)
+                    elif not admitted and patient["seen"]:
+                        result.append(patient)
+                if limit is not None:
+                    result = result[:limit]
+                return result
+          hints:
+            - 'Three cases for admitted: None means no filtering at all.'
+            - 'Be careful: `if admitted` is False for None as well as for False. Test for None explicitly.'
+            - 'Filter first into a new list, then slice it with result[:limit].'
+          grader:
+            kind: python-unit
+            preamble: |
+              ROOM = [
+                  {"name": "Ana", "seen": False},
+                  {"name": "Ben", "seen": True},
+                  {"name": "Cal", "seen": False},
+              ]
+            assertions:
+              - 'assert len(find_patients(ROOM)) == 3'
+              - 'assert [p["name"] for p in find_patients(ROOM, admitted=True)] == ["Ana", "Cal"]'
+              - 'assert [p["name"] for p in find_patients(ROOM, admitted=False)] == ["Ben"]'
+              - 'assert len(find_patients(ROOM, limit=2)) == 2'
+              - 'assert [p["name"] for p in find_patients(ROOM, admitted=True, limit=1)] == ["Ana"]'
+              - 'assert find_patients([], admitted=True) == []'
+
+      - kind: checkpoint
+        body: |
+          Path parameters identify the thing; query parameters change how you
+          see it.
+        unlocks: Next, the client sends you a whole record.
+
+  - id: "3.6"
+    track: api
+    title: Request bodies and validation
+    estimate_minutes: 11
+    objectives:
+      - Accept a JSON body and validate it
+      - Explain why validation belongs on the server
+    beats:
+      - kind: prose
+        body: |
+          Creating a patient means sending a whole record, which is too big for
+          a URL. It goes in the **request body**, as JSON.
+
+          FastAPI describes the expected shape with a Pydantic model:
+
+              from pydantic import BaseModel, Field
+
+              class PatientIn(BaseModel):
+                  full_name: str = Field(min_length=1)
+                  date_of_birth: str
+                  blood_type: str | None = None
+
+              @app.post("/patients")
+              def create_patient(patient: PatientIn):
+                  ...
+
+          That class is not documentation. At runtime, FastAPI parses the body
+          against it, converts the types, and returns a **422** with a precise
+          description of what was wrong — before your function runs. A field
+          you did not declare is rejected. A missing required field is rejected.
+
+      - kind: prose
+        body: |
+          A question worth answering properly: the web form already checks the
+          date. Why check again on the server?
+
+          **Because the form is not what talks to your server.** HTTP is, and
+          anyone can send an HTTP request. `curl`, a script, a competing app, a
+          browser with the form's JavaScript disabled, or the same form after
+          someone edited the page in developer tools. Client-side validation is
+          a courtesy to honest users. Server-side validation is the only one
+          that is actually enforced.
+
+          Say it as a rule: **never trust the client.** Not because users are
+          malicious, but because the client is simply not where your rules live.
+
+      - kind: code
+        language: python
+        intro: |
+          Write the validation itself, so you know what Pydantic is doing for
+          you rather than treating it as magic.
+        exercise:
+          id: api-validation
+          prompt: |
+            Write validate_patient(body) returning a list of error strings.
+            Require a non-empty "full_name" ("full_name is required"), and a
+            "date_of_birth" matching YYYY-MM-DD ("date_of_birth must be
+            YYYY-MM-DD"). Return an empty list when the body is valid.
+          starter: |
+            def validate_patient(body):
+                return []
+          solution: |
+            def validate_patient(body):
+                errors = []
+                name = body.get("full_name", "")
+                if not isinstance(name, str) or name.strip() == "":
+                    errors.append("full_name is required")
+                dob = body.get("date_of_birth", "")
+                parts = dob.split("-") if isinstance(dob, str) else []
+                if len(parts) != 3 or not all(p.isdigit() for p in parts):
+                    errors.append("date_of_birth must be YYYY-MM-DD")
+                elif len(parts[0]) != 4 or len(parts[1]) != 2 or len(parts[2]) != 2:
+                    errors.append("date_of_birth must be YYYY-MM-DD")
+                return errors
+          hints:
+            - 'Use body.get(key, "") so a missing key behaves like an empty one.'
+            - A date in the wrong format splits into the wrong number of pieces, or pieces of the wrong length.
+            - Collect every problem rather than returning at the first one — a client deserves the whole list.
+          grader:
+            kind: python-unit
+            assertions:
+              - 'assert validate_patient({"full_name": "Ana", "date_of_birth": "1990-01-01"}) == []'
+              - 'assert "full_name is required" in validate_patient({"date_of_birth": "1990-01-01"})'
+              - 'assert "full_name is required" in validate_patient({"full_name": "   ", "date_of_birth": "1990-01-01"})'
+              - 'assert "date_of_birth must be YYYY-MM-DD" in validate_patient({"full_name": "Ana", "date_of_birth": "01/01/1990"})'
+              - 'assert len(validate_patient({})) == 2'
+
+      - kind: checkpoint
+        body: |
+          Bodies carry records, models validate them, and the server is the
+          only place validation counts.
+        unlocks: Next, the other half of CRUD.
+
+  - id: "3.7"
+    track: api
+    title: Completing CRUD
+    estimate_minutes: 10
+    objectives:
+      - Implement update and delete correctly
+      - Keep a PATCH from erasing fields it was not given
+    beats:
+      - kind: prose
+        body: |
+          You can create and read. The remaining two look easy and have a sharp
+          edge each.
+
+          **PATCH** must touch only the fields it was sent:
+
+              @app.patch("/patients/{patient_id}")
+              def update_patient(patient_id: int, patch: PatientPatch):
+                  fields = patch.model_dump(exclude_unset=True)
+                  ...
+
+          `exclude_unset=True` is the entire lesson. Without it, every optional
+          field the client omitted comes through as `None` — and you write those
+          `None`s over real data. The endpoint works in testing, because testers
+          send complete objects.
+
+          **DELETE** returns `204 No Content` on success: it worked, and there
+          is nothing to say. It must also return `404` when the thing was not
+          there, rather than pretending.
+
+      - kind: prose
+        body: |
+          Deleting also runs into the constraints from lesson 2.9. A patient
+          with appointments cannot simply vanish — the database refuses, and the
+          right answer is `409 Conflict`, not a 500.
+
+          The distinction matters because status codes are how the client knows
+          whose fault it is. `4xx` means *you sent me something I cannot accept*.
+          `5xx` means *I broke*. Returning 500 for a foreign-key refusal tells
+          the client to retry and alerts an engineer, when in fact the request
+          was simply impossible and nothing is wrong with the server.
+
+      - kind: code
+        language: python
+        intro: |
+          Write the merge that PATCH performs. This is the function the
+          `exclude_unset` flag exists to feed.
+        exercise:
+          id: api-patch-merge
+          prompt: |
+            Write apply_patch(record, patch) returning a NEW dictionary with the
+            patch's keys applied over the record. Keys absent from the patch keep
+            their original value. The original record must not be modified.
+          starter: |
+            def apply_patch(record, patch):
+                return patch
+          solution: |
+            def apply_patch(record, patch):
+                updated = dict(record)
+                for key, value in patch.items():
+                    updated[key] = value
+                return updated
+          hints:
+            - The starter returns only the patch, which loses every field the client did not send.
+            - 'Start from a copy of the record: dict(record).'
+            - Then write the patch keys over the copy and return it.
+          grader:
+            kind: python-unit
+            preamble: |
+              RECORD = {"id": 1, "full_name": "Ana", "blood_type": "A+", "seen": False}
+              ORIGINAL = dict(RECORD)
+            assertions:
+              - 'assert apply_patch(RECORD, {"blood_type": "O-"})["blood_type"] == "O-"'
+              - 'assert apply_patch(RECORD, {"blood_type": "O-"})["full_name"] == "Ana"'
+              - 'assert apply_patch(RECORD, {}) == RECORD'
+              - 'assert apply_patch(RECORD, {"seen": True})["seen"] is True'
+              - 'assert RECORD == ORIGINAL'
+              - 'assert apply_patch(RECORD, {"new_field": 1})["new_field"] == 1'
+
+      - kind: checkpoint
+        body: |
+          All four operations, including the two that quietly destroy data when
+          written carelessly.
+        unlocks: Next, saying clearly what happened.
+
+  - id: "3.8"
+    track: api
+    title: Status codes
+    estimate_minutes: 8
+    objectives:
+      - Choose the status code that tells the truth
+      - Separate the client's mistakes from the server's
+    beats:
+      - kind: prose
+        body: |
+          The status code is the first thing every client reads, and it is
+          machine-readable in a way your error message is not.
+
+              2xx   it worked
+                200 OK            here is the answer
+                201 Created       made it; Location says where
+                204 No Content    worked; nothing to send back
+
+              4xx   you sent something I cannot accept
+                400 Bad Request   malformed
+                401 Unauthorized  I do not know who you are
+                403 Forbidden     I know who you are; no
+                404 Not Found     no such thing
+                409 Conflict      clashes with the current state
+                422 Unprocessable well-formed, but invalid
+
+              5xx   I broke
+                500 Internal Server Error
+                503 Service Unavailable
+
+          The 4xx/5xx line is the one that matters most. It decides whether the
+          client retries, whether a pager goes off at 3am, and whether anyone
+          investigates. An API that returns 500 for bad input generates alerts
+          nobody can act on, and the real failures get ignored among them.
+
+      - kind: code
+        language: python
+        intro: |
+          Map outcomes to codes. These are the exact decisions your own
+          endpoints will make.
+        exercise:
+          id: api-status-codes
+          prompt: |
+            Write status_for(outcome) mapping: "created" → 201, "ok" → 200,
+            "deleted" → 204, "missing" → 404, "invalid" → 422, "conflict" → 409,
+            "unauthenticated" → 401, and anything else → 500.
+          starter: |
+            def status_for(outcome):
+                return 200
+          solution: |
+            def status_for(outcome):
+                codes = {
+                    "created": 201,
+                    "ok": 200,
+                    "deleted": 204,
+                    "missing": 404,
+                    "invalid": 422,
+                    "conflict": 409,
+                    "unauthenticated": 401,
+                }
+                return codes.get(outcome, 500)
+          hints:
+            - Seven named outcomes and a fallback — a dictionary is cleaner than seven ifs.
+            - 'dict.get(key, default) returns the default when the key is absent.'
+            - The fallback is 500, because an outcome you did not plan for is your bug, not the caller's.
+          grader:
+            kind: python-unit
+            assertions:
+              - 'assert status_for("created") == 201'
+              - 'assert status_for("ok") == 200'
+              - 'assert status_for("deleted") == 204'
+              - 'assert status_for("missing") == 404'
+              - 'assert status_for("invalid") == 422'
+              - 'assert status_for("conflict") == 409'
+              - 'assert status_for("unauthenticated") == 401'
+              - 'assert status_for("something nobody planned for") == 500'
+
+      - kind: checkpoint
+        body: |
+          Your API can say precisely what happened, and whose fault it was.
+        unlocks: Next, who is allowed to ask.
+
+  - id: "3.9"
+    track: api
+    title: Who is asking
+    estimate_minutes: 9
+    objectives:
+      - Check a token on every request
+      - Explain why hiding a button is not security
+    beats:
+      - kind: prose
+        body: |
+          Your hospital API currently answers anyone. Since HTTP forgets you
+          between requests, **every request must carry its own proof of
+          identity** — there is nowhere else for it to live.
+
+          The simplest form is a token in a header:
+
+              GET /patients
+              Authorization: Bearer abc123...
+
+          The server checks it on every single request. Not at login — there is
+          no "login" that persists, because there is no connection to persist
+          it on.
+
+          Two rules that are not optional:
+
+          - Compare tokens in **constant time** (`secrets.compare_digest`).
+            Ordinary `==` returns faster on an earlier mismatch, which leaks the
+            token one character at a time to anyone patient enough to measure.
+          - **Never log them.** A token in a log file is a token in a backup, in
+            a log aggregator, and on a laptop.
+
+      - kind: prose
+        body: |
+          The mistake that matters most here is hiding the button.
+
+          A UI that only shows "Delete patient" to administrators has not
+          secured anything. The endpoint is still there, still answering, and
+          the button was never what was stopping anyone — it was decoration over
+          a door that is standing open.
+
+          **Authorisation is checked on the server, on every request, or it does
+          not exist.** The client is a convenience for honest users.
+
+          This is a specific thing to look for when an agent builds you a UI in
+          Track 4. Agents are very good at hiding the button.
+
+      - kind: code
+        language: python
+        intro: |
+          Write the check. Note what it refuses as well as what it allows.
+        exercise:
+          id: api-auth-check
+          prompt: |
+            Write is_authorised(header, expected) returning True only when the
+            header is exactly "Bearer " followed by the expected token. Return
+            False for a missing header, the wrong scheme, or an empty expected token.
+          starter: |
+            def is_authorised(header, expected):
+                return True
+          solution: |
+            import secrets
+
+            def is_authorised(header, expected):
+                if not expected:
+                    return False
+                if not isinstance(header, str) or not header.startswith("Bearer "):
+                    return False
+                supplied = header[len("Bearer "):]
+                return secrets.compare_digest(supplied, expected)
+          hints:
+            - Four ways this should refuse, and only one way it should allow.
+            - 'An empty expected token must never match — otherwise an unconfigured server lets everyone in.'
+            - 'Use secrets.compare_digest for the comparison, not ==.'
+          grader:
+            kind: python-unit
+            assertions:
+              - 'assert is_authorised("Bearer abc123", "abc123") is True'
+              - 'assert is_authorised("Bearer wrong", "abc123") is False'
+              - 'assert is_authorised("abc123", "abc123") is False'
+              - 'assert is_authorised("", "abc123") is False'
+              - 'assert is_authorised(None, "abc123") is False'
+              - 'assert is_authorised("Bearer ", "") is False'
+
+      - kind: checkpoint
+        body: |
+          Every request proves who it is, the check happens on the server, and
+          a hidden button secures nothing.
+        unlocks: The last lesson, and the most important one in this course.
+
+  - id: "3.10"
+    track: api
+    title: Testing — how you verify an agent
+    estimate_minutes: 12
+    objectives:
+      - Write a test that makes a real request and asserts the response
+      - Say what makes a test worth having
+    beats:
+      - kind: prose
+        body: |
+          This is the lesson the whole course has been walking towards.
+
+          In Track 4 an agent will write you an API in ninety seconds. It will
+          look right. The names will be sensible, the structure clean, the code
+          better formatted than yours. And you will have no idea whether it
+          works.
+
+          Reading it line by line does not scale, and it is not what
+          professionals do. **You run it against tests.**
+
+          A test is an executable claim about behaviour:
+
+              from fastapi.testclient import TestClient
+              from main import app
+
+              client = TestClient(app)
+
+              def test_missing_patient_returns_404():
+                  response = client.get("/patients/999999")
+                  assert response.status_code == 404
+
+          That is the whole idea. Make a request, assert what should come back.
+          Run it with `pytest`. Green means the claim holds; red means it does
+          not, and you know which claim and where.
+
+      - kind: prose
+        body: |
+          What separates a test that earns its place from one that wastes it:
+
+          - **Test behaviour, not implementation.** Assert the response, not
+            which function got called. The second kind breaks every time
+            anything is tidied up, and teaches everyone to ignore the suite.
+          - **One claim per test.** Its name should state the claim, so a
+            failure is read rather than debugged.
+          - **Test the unhappy path first.** Everybody tests that creating a
+            patient works. Almost nobody tests what happens with a missing name,
+            an unknown department, or a delete that runs twice — which is
+            exactly where generated code is weakest.
+          - **A test you never watched fail proves nothing.** If it passed the
+            first time you ran it, you do not yet know it can catch anything.
+            Break the code on purpose and watch it go red.
+
+          That last one is the discipline that makes the rest worth doing.
+
+      - kind: code
+        language: python
+        intro: |
+          Write the assertions themselves. Each one is a claim about an API
+          response, in the form you would put in a pytest file.
+        exercise:
+          id: api-test-assertions
+          prompt: |
+            Write check_response(response) taking a dictionary with "status" and
+            "body" keys. Return a list of problems: "expected 201, got N" when
+            the status is not 201; "missing id" when the body has no "id";
+            and "name not echoed" when body["full_name"] is not "Ana".
+            Return an empty list when all three hold.
+          starter: |
+            def check_response(response):
+                return []
+          solution: |
+            def check_response(response):
+                problems = []
+                status = response.get("status")
+                if status != 201:
+                    problems.append(f"expected 201, got {status}")
+                body = response.get("body") or {}
+                if "id" not in body:
+                    problems.append("missing id")
+                if body.get("full_name") != "Ana":
+                    problems.append("name not echoed")
+                return problems
+          hints:
+            - Three independent claims, so three separate checks and no early return.
+            - 'An f-string builds the status message: f"expected 201, got {status}"'
+            - 'Guard against a missing body with response.get("body") or {}.'
+          grader:
+            kind: python-unit
+            assertions:
+              - 'assert check_response({"status": 201, "body": {"id": 1, "full_name": "Ana"}}) == []'
+              - 'assert "expected 201, got 200" in check_response({"status": 200, "body": {"id": 1, "full_name": "Ana"}})'
+              - 'assert "missing id" in check_response({"status": 201, "body": {"full_name": "Ana"}})'
+              - 'assert "name not echoed" in check_response({"status": 201, "body": {"id": 1, "full_name": "Ben"}})'
+              - 'assert len(check_response({"status": 500, "body": {}})) == 3'
+
+      - kind: prose
+        body: |
+          You now have the complete loop.
+
+          You can design a schema, query it, put it behind an API, and **prove
+          the API behaves**. That last part is what makes the next track safe:
+          an agent can write as much code as it likes, because you can check it.
+
+          Direction without verification is just hoping. You are past that now.
+
+      - kind: checkpoint
+        body: |
+          Track 3 is done. Your database is reachable, validated, authenticated,
+          and — the part that matters — testable.
+        unlocks: The Hospital API boss, then Track 4.

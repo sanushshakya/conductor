@@ -48,3 +48,15 @@ test('the transaction criteria cannot be passed by discharging alone', async () 
     expect(result.passed, `${exerciseId} was satisfied by half the work`).toBe(false)
   }
 }, 30_000)
+
+test('an api-suite exercise naming an unknown suite is reported', async () => {
+  const report = await runAllSolutions('harness/__fixtures__/bad-api-suite')
+  expect(report.ok).toBe(false)
+  expect(report.failures.some((f) => /does not provide/.test(f.reason))).toBe(true)
+})
+
+test('api-suite exercises are not counted as reference solutions', async () => {
+  // Their "solution" is a running server, so there is nothing to execute.
+  const withApi = await runAllSolutions('content')
+  expect(withApi.ok).toBe(true)
+})
