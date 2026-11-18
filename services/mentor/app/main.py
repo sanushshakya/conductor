@@ -5,6 +5,8 @@ from fastapi import Depends, FastAPI
 from .health import router as health_router
 from .grade_api import GradeApiRequest, grade_api
 from .hospital import router as hospital_router
+from .mentor import ask as mentor_ask
+from .mentor.types import MentorRequest
 from .runner import RunRequest, run_python
 from .security import require_token
 
@@ -26,6 +28,18 @@ app.include_router(hospital_router, dependencies=[Depends(require_token)])
 def whoami() -> dict[str, str]:
     """Trivial authenticated route, used to prove the token gate works."""
     return {"service": "conductor-sidecar"}
+
+
+@app.post("/mentor/ask", dependencies=[Depends(require_token)])
+async def mentor(request: MentorRequest) -> dict[str, object]:
+    """Answers the learner, always. Never fails over into a dialog."""
+    reply = await mentor_ask(request)
+    return {
+        "answer": reply.answer,
+        "tier": reply.tier,
+        "provider": reply.provider,
+        "usedFallback": reply.used_fallback,
+    }
 
 
 @app.post("/grade/api", dependencies=[Depends(require_token)])

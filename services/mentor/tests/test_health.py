@@ -72,3 +72,18 @@ def test_run_python_endpoint_uses_camel_case_for_the_renderer(monkeypatch):
         headers={"X-Conductor-Token": "secret-token"},
     ).json()
     assert set(body) == {"ok", "stdout", "stderr", "exitCode", "durationMs", "truncated", "killedReason"}
+
+
+def test_mentor_endpoint_answers_with_authored_hints(monkeypatch):
+    monkeypatch.setenv("CONDUCTOR_TOKEN", "secret-token")
+    monkeypatch.setenv("CONDUCTOR_OLLAMA_HOST", "http://127.0.0.1:1")
+    monkeypatch.delenv("CONDUCTOR_API_KEY", raising=False)
+    response = client.post(
+        "/mentor/ask",
+        json={"question": "stuck", "tier": 1, "authored_hints": ["Look at line 3."]},
+        headers={"X-Conductor-Token": "secret-token"},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["answer"] == "Look at line 3."
+    assert body["usedFallback"] is True

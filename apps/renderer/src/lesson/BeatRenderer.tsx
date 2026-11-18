@@ -3,6 +3,7 @@ import type { Beat, Exercise, ExerciseResult } from '@conductor/shared'
 import { Markdown } from '../components/Markdown'
 import { CodeEditor } from '../components/CodeEditor'
 import { HintStack } from '../components/HintStack'
+import { MentorPanel } from '../mentor/MentorPanel'
 import { CheckList } from '../components/CheckList'
 import { getVisualizer } from '../visualizers/registry'
 import { grade } from '@conductor/core'
@@ -196,6 +197,7 @@ function CodeExerciseBeat({
 
       {result && <CheckList checks={result.checks} />}
       <HintStack hints={exercise.hints} />
+      <MentorPanel authoredHints={exercise.hints} learnerCode={code} />
     </div>
   )
 }

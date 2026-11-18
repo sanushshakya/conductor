@@ -133,7 +133,7 @@ test('editing the code clears the previous run output', async () => {
   await userEvent.click(screen.getByRole('button', { name: /^run$/i }))
   expect(await screen.findByText(/NameError/)).toBeInTheDocument()
 
-  const editor = screen.getByRole('textbox')
+  const editor = screen.getByRole('textbox', { name: /code editor/i })
   await userEvent.clear(editor)
   expect(screen.queryByText(/NameError/)).not.toBeInTheDocument()
 })
@@ -156,7 +156,7 @@ test('a passing code exercise unlocks the lesson', async () => {
     ],
   })
   render(<LessonPlayer lesson={codeLesson} onFinished={() => {}} />)
-  await userEvent.type(screen.getByRole('textbox'), 'print("hi")')
+  await userEvent.type(screen.getByRole('textbox', { name: /code editor/i }), 'print("hi")')
   await userEvent.click(screen.getByRole('button', { name: /check my answer/i }))
   await waitFor(() =>
     expect(screen.getByRole('button', { name: /finish lesson/i })).toBeEnabled(),
@@ -183,7 +183,7 @@ test('Track 0 code exercises still grade when no Python engine is available', as
     ],
   })
   render(<LessonPlayer lesson={codeLesson} onFinished={() => {}} />)
-  await userEvent.type(screen.getByRole('textbox'), 'print("hi")')
+  await userEvent.type(screen.getByRole('textbox', { name: /code editor/i }), 'print("hi")')
   await userEvent.click(screen.getByRole('button', { name: /check my answer/i }))
   await waitFor(() => expect(screen.getByRole('button', { name: /finish lesson/i })).toBeEnabled())
 })
