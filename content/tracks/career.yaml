@@ -1,0 +1,539 @@
+track: career
+title: Career
+blurb: The tool atlas, your portfolio, and the next ninety days.
+
+lessons:
+  - id: "5.1"
+    track: career
+    title: The Tool Atlas
+    estimate_minutes: 12
+    objectives:
+      - Tell the tools you need now from the ones you will hear about
+      - Explain why a tool is where it is on the map
+    beats:
+      - kind: prose
+        body: |
+          Open any "developer roadmap" and you get a wall of two hundred
+          logos. It is genuinely discouraging, and it is also misleading: it
+          implies you need all of them, and gives no order.
+
+          Here is the honest version. Every tool below carries a verdict and a
+          one-line reason:
+
+          - **learn now** — you use it in this course and it pays off at once
+          - **later** — real and worth knowing, once you have something to use
+            it on
+          - **skip for now** — you will hear about it; here is why it can wait
+
+          The verdicts are opinions, and they are reasoned ones. Click any tool
+          to see why it sits where it does — the reasoning is the part that
+          transfers, because the tools change and the judgement does not.
+
+      - kind: visual
+        visualizer: tool-atlas
+        caption: Filter by verdict. A tick means you have already covered it here.
+        volatile: true
+        verified_on: "2026-11-18"
+
+      - kind: prose
+        body: |
+          Three things worth saying out loud about that map.
+
+          **The "learn now" list is short.** Python, SQL, FastAPI, pytest,
+          Git, GitHub, Docker, a terminal, an agent. That is roughly nine
+          things, and you have met most of them already. Depth in nine beats
+          recognition of two hundred, every time.
+
+          **"Skip for now" is not "bad".** Kubernetes is superb at running
+          hundreds of containers. You have one. Learning it now would be cost
+          with no benefit, and you would forget it before you needed it.
+
+          **The map goes stale.** Every entry is dated, and this app fails its
+          own build if a claim here goes unchecked for six months. Apply the
+          same standard to any roadmap you are shown: if it is not dated, you
+          do not know what it is describing.
+
+      - kind: quiz
+        exercise:
+          id: career-atlas-judgement
+          prompt: |
+            A job advert lists fourteen technologies. You know four of them.
+          solution: "[2]"
+          hints:
+            - Adverts are written as wish lists, not as entry requirements.
+            - Which answer builds something you can show?
+            - Learning two things properly beats a list you half recognise.
+          grader:
+            kind: quiz
+            question: |
+              What is the best use of the next month?
+            options:
+              - "Learn something about all fourteen so you recognise every word"
+              - "Skip the job — you are clearly not ready"
+              - "Build something real with the four you know, then add the one the role depends on most"
+              - "Put all fourteen on your CV and learn them if you get an interview"
+            correct: [2]
+            explanation: |
+              Adverts are wish lists assembled by committee. Nobody has all
+              fourteen, including the people who wrote it.
+
+              What gets you through the door is a thing you built and can
+              explain. Depth in a few technologies demonstrates you can learn
+              the rest; a list of names you half recognise demonstrates
+              nothing, and falls apart in the first technical conversation.
+
+      - kind: checkpoint
+        body: |
+          A short list of essentials, a reasoned opinion on everything else,
+          and a dated map rather than an undated wall of logos.
+        unlocks: Next, turning what you built into something you can show.
+
+  - id: "5.2"
+    track: career
+    title: Your portfolio is three projects
+    estimate_minutes: 10
+    objectives:
+      - Turn a capstone into something someone else can assess
+      - Say what a README has to contain
+    beats:
+      - kind: prose
+        body: |
+          You already have the hard part. The Hospital DBMS, the Hospital API,
+          and the Hospital Suite are three real projects — a designed database,
+          a tested API, and a full-stack application with an agent-built front
+          end.
+
+          That is more than most junior candidates bring, and the reason is
+          not that they are large. It is that you can explain every decision in
+          them, because you made every decision in them.
+
+          What is usually missing is the part that makes a project *legible* to
+          someone who has thirty seconds.
+
+      - kind: prose
+        body: |
+          A README that works contains five things, in this order:
+
+          1. **What it is**, in one sentence. "A hospital records API with a
+             normalised SQLite schema and a tested REST interface."
+          2. **A picture or a snippet.** A screenshot, or three lines of a
+             request and its response.
+          3. **How to run it.** The exact commands, from a clean clone. Test
+             them on a different folder — they are wrong more often than not.
+          4. **What is interesting about it.** One or two decisions and why.
+             "Discharge is a transaction because a patient must never be
+             discharged while their prescriptions are still live."
+          5. **What you would do next.** Shows judgement about your own work,
+             which is the thing being assessed.
+
+          Point four is what separates a project that reads as a tutorial
+          follow-along from one that reads as yours. Tutorials do not have
+          decisions in them.
+
+      - kind: code
+        language: python
+        intro: |
+          Score a README before you publish it, the way you scored a brief in
+          lesson 4.3.
+        exercise:
+          id: career-readme-score
+          prompt: |
+            Write missing_sections(readme) taking a dictionary with boolean
+            keys "what", "demo", "run", "decisions" and "next". Return the
+            missing ones in that order.
+          starter: |
+            def missing_sections(readme):
+                return []
+          solution: |
+            def missing_sections(readme):
+                sections = ["what", "demo", "run", "decisions", "next"]
+                return [section for section in sections if not readme.get(section)]
+          hints:
+            - The order is fixed, so iterate over a list of names rather than the dictionary.
+            - 'A key that is absent and a key set to False are both missing.'
+            - One list comprehension does it.
+          grader:
+            kind: python-unit
+            assertions:
+              - 'assert missing_sections({"what": True, "demo": True, "run": True, "decisions": True, "next": True}) == []'
+              - 'assert missing_sections({}) == ["what", "demo", "run", "decisions", "next"]'
+              - 'assert missing_sections({"what": True, "run": True}) == ["demo", "decisions", "next"]'
+              - 'assert missing_sections({"what": True, "demo": True, "run": True, "decisions": False, "next": True}) == ["decisions"]'
+
+      - kind: checkpoint
+        body: |
+          Three real projects, each with a README that makes them legible in
+          thirty seconds.
+        unlocks: Next, where they live.
+
+  - id: "5.3"
+    track: career
+    title: Git and GitHub properly
+    estimate_minutes: 11
+    objectives:
+      - Keep a history someone else can read
+      - Use branches and pull requests the way a team does
+    beats:
+      - kind: prose
+        body: |
+          You met Git in lesson 4.6 as an undo button. It is also the first
+          thing anyone looks at when they are deciding whether to interview
+          you, and what they are reading is not the code — it is the history.
+
+          A log of "stuff", "fix", "more fixes", "asdf" says you work in a way
+          nobody can follow. A log of "Add discharge endpoint with transaction",
+          "Return 409 when a patient is already discharged", "Add tests for
+          discharge failures" says the opposite, and it costs nothing extra.
+
+          **One commit, one change, described in the imperative.** "Add X", not
+          "Added X" or "adding x" — it reads as an instruction to the codebase,
+          which is the convention everywhere.
+
+      - kind: prose
+        body: |
+          Four more things that make a repository look like a professional's:
+
+          - **Branches for work in progress.** `git switch -c add-discharge`.
+            Main stays working; your experiment is thrown away cleanly if it
+            does not pan out.
+          - **Pull requests, even alone.** A PR is a place to write down what
+            changed and why. Doing it solo is practice for doing it on a team,
+            and your own PRs become a record of your reasoning.
+          - **A .gitignore from the start.** Nothing good comes from committing
+            `.venv`, `node_modules`, or a `.env` file. The last one is how
+            secrets get published.
+          - **Never commit a secret.** Git keeps history, so deleting a key in
+            a later commit does not remove it. If it happens, rotate the key —
+            do not just delete the line.
+
+      - kind: code
+        language: python
+        intro: |
+          A commit-message linter. These are the rules a team would actually
+          apply.
+        exercise:
+          id: career-commit-lint
+          prompt: |
+            Write lint_commit(message) returning a list of problems:
+            "too short" if under 10 characters, "not imperative" if the first
+            word ends in "ed" or "ing", and "ends with a full stop" if it does.
+            Return an empty list when the message is fine.
+          starter: |
+            def lint_commit(message):
+                return []
+          solution: |
+            def lint_commit(message):
+                problems = []
+                text = message.strip()
+                if len(text) < 10:
+                    problems.append("too short")
+                first = text.split(" ")[0].lower().rstrip(".,:;!") if text else ""
+                if first.endswith("ed") or first.endswith("ing"):
+                    problems.append("not imperative")
+                if text.endswith("."):
+                    problems.append("ends with a full stop")
+                return problems
+          hints:
+            - Three independent checks, so no early returns — collect them all.
+            - 'The first word is text.split(" ")[0] — strip trailing punctuation off it before comparing.'
+            - Strip the message first, so trailing whitespace does not hide a full stop.
+          grader:
+            kind: python-unit
+            assertions:
+              - 'assert lint_commit("Add discharge endpoint") == []'
+              - 'assert "too short" in lint_commit("fix")'
+              - 'assert "not imperative" in lint_commit("Added discharge endpoint")'
+              - 'assert "not imperative" in lint_commit("Adding discharge endpoint")'
+              - 'assert "ends with a full stop" in lint_commit("Add discharge endpoint.")'
+              - 'assert len(lint_commit("Fixed.")) == 3'
+
+      - kind: checkpoint
+        body: |
+          A readable history, branches, pull requests, and nothing in the
+          repository that should not be public.
+        unlocks: Next, how to learn the things nobody taught you.
+
+  - id: "5.4"
+    track: career
+    title: Reading what you did not write
+    estimate_minutes: 10
+    objectives:
+      - Get an answer out of documentation quickly
+      - Read source code when the documentation does not say
+    beats:
+      - kind: prose
+        body: |
+          Nobody memorises this. The difference between someone three years in
+          and someone three weeks in is mostly how fast they find the answer.
+
+          **Documentation, in order of usefulness:**
+
+          1. The **quickstart** — gets something running, and tells you the
+             shape of the thing.
+          2. The **API reference** — what each function actually takes and
+             returns. Where you live once you know the shape.
+          3. The **guides** — the intended way to do common tasks.
+          4. The **changelog** — why the example you found online no longer
+             works. Checked far too rarely.
+
+          Search the docs site, not the web. A page from 2021 ranks fine and is
+          describing a version that no longer exists.
+
+      - kind: prose
+        body: |
+          When the docs do not say — and they frequently do not — **read the
+          source**. This feels forbidden and is completely normal.
+
+          Everything you have used in this course is open: FastAPI, Pydantic,
+          pytest, SQLite's Python module. You can open any of them and read
+          what the function actually does with your argument.
+
+          You do not read the whole project. You find the one function you are
+          calling, read it, follow one level down if you must, and stop. Ten
+          minutes of that beats an hour of guessing, and it is how you resolve
+          the arguments nobody has written a blog post about.
+
+          A good place to start: this app. Conductor is written in the two
+          languages it teaches. The grading code you have been judged by is a
+          few hundred lines of TypeScript, and the hospital API is a few
+          hundred lines of Python. You are qualified to read both.
+
+      - kind: quiz
+        exercise:
+          id: career-reading-source
+          prompt: |
+            A library function behaves differently from what you expected, and
+            the documentation does not mention your case.
+          solution: "[2]"
+          hints:
+            - Which option gives you an answer you can rely on tomorrow?
+            - Guessing and asking both produce claims you cannot check.
+            - The code is right there.
+          grader:
+            kind: quiz
+            question: |
+              What is the fastest route to a reliable answer?
+            options:
+              - "Try variations until one works"
+              - "Ask an agent what the function does"
+              - "Open the library's source and read that function"
+              - "Find a blog post about the library"
+            correct: [2]
+            explanation: |
+              The source is the only one of these that cannot be out of date or
+              confidently wrong. It is also usually quicker than it sounds —
+              you are reading one function, not a project.
+
+              An agent is genuinely useful *alongside* this: "explain this
+              function" while you read it is excellent. "What does this
+              function do" instead of reading it gives you a claim you have no
+              way to check, which is the habit this whole course is against.
+
+      - kind: checkpoint
+        body: |
+          Docs in order, search the docs site rather than the web, and read the
+          source when the docs run out.
+        unlocks: Next, what interviews actually test now.
+
+  - id: "5.5"
+    track: career
+    title: Interviewing when AI exists
+    estimate_minutes: 11
+    objectives:
+      - Know what is being assessed in a technical interview now
+      - Talk about your own work credibly
+    beats:
+      - kind: prose
+        body: |
+          Technical hiring has shifted, and the direction is good news for the
+          way you have learned.
+
+          The old puzzle round — invert a binary tree on a whiteboard — is
+          worth much less when a model can produce it instantly. What is being
+          assessed instead:
+
+          - **Can you explain what you built, and why?** Decisions, trade-offs,
+            what you would do differently. This is the big one, and it is why
+            point four of your README matters.
+          - **Can you debug something unfamiliar?** Often live, in code you did
+            not write. This is lesson 1.7 and lesson 4.8, exactly.
+          - **Can you review code and spot what is wrong with it?** Increasingly
+            common, and it is the Agent Duel with a person watching.
+          - **Can you direct a model and verify what it gives you?** Some
+            interviews now *let* you use one, and watch how you do it.
+
+          Every one of those is something this course drilled. That was not an
+          accident.
+
+      - kind: prose
+        body: |
+          How to talk about your work without overclaiming or underselling.
+
+          **Say what you built and what you decided.** "I used SQLite because
+          it is a single file and the data is small. If there were concurrent
+          writers I would move to Postgres, and the schema would not have to
+          change." That is a sentence a senior engineer recognises.
+
+          **Be exact about what an agent did.** "The front end was built by an
+          agent from a spec I wrote; I reviewed the diff and fixed the empty
+          and error states, which it had skipped." Nobody is impressed by
+          pretending you typed everything, and everybody notices when a claim
+          does not survive one follow-up question.
+
+          **Say when you do not know.** "I have not used Kubernetes. I have
+          used Docker, and I would start from the documentation." That answer
+          is fine. Bluffing is not, and it is always detected, because the next
+          question is more specific.
+
+      - kind: quiz
+        exercise:
+          id: career-interview-answer
+          prompt: |
+            You are asked about the front end of your Hospital Suite. An agent
+            built most of it from your spec.
+          solution: "[1]"
+          hints:
+            - Which answer survives the follow-up question?
+            - Directing an agent well is a skill worth describing accurately.
+            - Both overclaiming and hiding it cost you.
+          grader:
+            kind: quiz
+            question: |
+              What do you say?
+            options:
+              - "I built the whole front end myself"
+              - "I wrote the spec, an agent generated it, and I reviewed the diff and fixed the empty and error states it had skipped"
+              - "I did not really do the front end"
+              - "It was mostly AI, so it does not really count"
+            correct: [1]
+            explanation: |
+              The second answer is accurate, and it describes exactly the skill
+              they are hiring for in 2027: specifying, reviewing, and catching
+              what the agent missed.
+
+              The first falls apart on one follow-up. The third and fourth
+              throw away the strongest thing you did — the reviewing is the
+              part with judgement in it, and it is the part most candidates
+              cannot talk about.
+
+      - kind: checkpoint
+        body: |
+          Explain, debug, review, direct — and describe your own work exactly.
+        unlocks: The last lesson. What to do tomorrow.
+
+  - id: "5.6"
+    track: career
+    title: The next ninety days
+    estimate_minutes: 12
+    objectives:
+      - Leave with a specific plan rather than a feeling
+      - Know what to do when motivation runs out
+    beats:
+      - kind: prose
+        body: |
+          You have finished. Here is the part most courses skip, which is what
+          to actually do on Monday.
+
+          **Weeks 1–3: make it yours.** Take the Hospital Suite and change the
+          domain. A library, a gym, a bike shop, your brother's football club.
+          Same shapes, different nouns — and because you are not following
+          instructions, every decision is now genuinely yours. This is the
+          single highest-value thing on this list.
+
+          **Weeks 4–6: build something nobody asked for.** Something small you
+          personally want. The energy difference between an assignment and a
+          thing you actually want to exist is enormous, and it is what carries
+          you through the parts that are not fun.
+
+          **Weeks 7–9: read other people's code.** Pick a small open-source
+          Python project. Read it. Find something — a typo in the docs, a
+          missing test, an unclear error message — and send a pull request.
+          Your first one is terrifying and takes an hour. Everyone's was.
+
+          **Weeks 10–12: go public.** Three repositories with real READMEs. A
+          short write-up of one thing you learned the hard way. Apply for
+          things before you feel ready, because that feeling does not arrive on
+          its own.
+
+      - kind: prose
+        body: |
+          Two things to know about the part nobody warns you about.
+
+          **You will stall.** Everyone does, usually around week five, usually
+          on something stupid. The way through is smaller steps, not more
+          willpower: get one thing working, however small, then the next.
+          Momentum is a consequence of finishing things, not a prerequisite.
+
+          **Boredom is a signal, not a verdict.** When something feels
+          pointless, it is usually because you cannot see what it is *for*.
+          That is what happened with the fundamentals before you started —
+          they looked like a tax, until each one turned out to be the thing
+          that let you catch a bug an agent made.
+
+          If you are bored, go and build something that needs the boring thing.
+          It stops being boring immediately.
+
+      - kind: code
+        language: python
+        intro: |
+          Last exercise. Make the plan concrete — a week number, and what you
+          will have finished by the end of it.
+        exercise:
+          id: career-ninety-days
+          prompt: |
+            Write next_milestone(week) returning what you are working on:
+            weeks 1-3 "make it yours", 4-6 "build something nobody asked for",
+            7-9 "read other people's code", 10-12 "go public", and anything
+            else "pick the next thing and start".
+          starter: |
+            def next_milestone(week):
+                return "pick the next thing and start"
+          solution: |
+            def next_milestone(week):
+                if 1 <= week <= 3:
+                    return "make it yours"
+                if 4 <= week <= 6:
+                    return "build something nobody asked for"
+                if 7 <= week <= 9:
+                    return "read other people's code"
+                if 10 <= week <= 12:
+                    return "go public"
+                return "pick the next thing and start"
+          hints:
+            - Four ranges and a fallback — the same shape as lesson 1.3's triage.
+            - 'Python lets you write a range check directly: 1 <= week <= 3.'
+            - The fallback has no condition and goes last.
+          grader:
+            kind: python-unit
+            assertions:
+              - 'assert next_milestone(1) == "make it yours"'
+              - 'assert next_milestone(3) == "make it yours"'
+              - 'assert next_milestone(5) == "build something nobody asked for"'
+              - 'assert next_milestone(8) == "read other people''s code"'
+              - 'assert next_milestone(12) == "go public"'
+              - 'assert next_milestone(0) == "pick the next thing and start"'
+              - 'assert next_milestone(52) == "pick the next thing and start"'
+
+      - kind: prose
+        body: |
+          One last thing, and it is the sentence this whole course was built
+          around.
+
+          **You cannot direct what you cannot read.**
+
+          You started because the fundamentals looked pointless next to a
+          machine that writes code for you. You now know what they were for:
+          every loop, every join, every status code is a thing you can check —
+          and checking is the entire job when the writing is free.
+
+          The agents will get better. That does not reduce what you have; it
+          increases it. The scarce skill was never typing. It is knowing what
+          should be true, and being able to tell whether it is.
+
+          Go and build something.
+
+      - kind: checkpoint
+        body: |
+          Ninety days, in four three-week blocks, with something finished at
+          the end of each.
+        unlocks: That is the whole course. The rest is yours.

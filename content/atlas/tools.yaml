@@ -1,0 +1,263 @@
+# The Tool Atlas.
+#
+# A beginner's real question is not "what exists?" — it is "which of these do I
+# need, and when?" So every entry carries a verdict and a one-line reason, and
+# the reasons are written for someone deciding how to spend the next month.
+#
+# learn-now  you will use it in this course, and it pays off immediately
+# later      real and worth knowing, once you have something to use it on
+# skip       you will hear about it; you do not need it now, and here is why
+#
+# Judgements go stale, so every entry is dated and the harness ages them out.
+
+tools:
+  # ── languages ───────────────────────────────────────────────────────────
+  - id: python
+    name: Python
+    category: languages
+    verdict: learn-now
+    why: Readable enough to learn on, and the default language of data and AI work.
+    track_id: fundamentals
+    verified_on: "2026-11-18"
+
+  - id: sql
+    name: SQL
+    category: languages
+    verdict: learn-now
+    why: Fifty years old, barely changed, and still how every application asks its data a question.
+    track_id: sql
+    verified_on: "2026-11-18"
+
+  - id: javascript
+    name: JavaScript
+    category: languages
+    verdict: later
+    why: Unavoidable the moment you build a web interface. Learn it when you need one.
+    verified_on: "2026-11-18"
+
+  - id: typescript
+    name: TypeScript
+    category: languages
+    verdict: later
+    why: JavaScript with types that catch mistakes before they run. Worth it on anything you maintain.
+    verified_on: "2026-11-18"
+
+  - id: rust
+    name: Rust
+    category: languages
+    verdict: skip
+    why: Excellent and genuinely hard. Nothing you need in your first year requires it.
+    verified_on: "2026-11-18"
+
+  - id: java
+    name: Java
+    category: languages
+    verdict: skip
+    why: Enormous in enterprise work, and a poor first language. Learn it if a job asks.
+    verified_on: "2026-11-18"
+
+  # ── databases ───────────────────────────────────────────────────────────
+  - id: sqlite
+    name: SQLite
+    category: databases
+    verdict: learn-now
+    why: A whole database in one file, with no server. What you build on in this course.
+    lesson_id: "2.2"
+    verified_on: "2026-11-18"
+
+  - id: postgres
+    name: PostgreSQL
+    category: databases
+    verdict: later
+    why: The default serious database. Your SQL already works on it; the difference is operations.
+    verified_on: "2026-11-18"
+
+  - id: redis
+    name: Redis
+    category: databases
+    verdict: later
+    why: In-memory store for caching and queues. Useful once something is slow.
+    verified_on: "2026-11-18"
+
+  - id: mongodb
+    name: MongoDB
+    category: databases
+    verdict: skip
+    why: Schemaless storage. Learn relational thinking first, or you will reinvent it badly.
+    verified_on: "2026-11-18"
+
+  # ── backend ─────────────────────────────────────────────────────────────
+  - id: fastapi
+    name: FastAPI
+    category: backend
+    verdict: learn-now
+    why: Turns a Python function into an HTTP endpoint, with validation and docs for free.
+    track_id: api
+    verified_on: "2026-11-18"
+
+  - id: pytest
+    name: pytest
+    category: backend
+    verdict: learn-now
+    why: How you prove code works — including code an agent wrote for you.
+    lesson_id: "3.10"
+    verified_on: "2026-11-18"
+
+  - id: rest
+    name: REST
+    category: backend
+    verdict: learn-now
+    why: The convention nearly every web API follows. Verbs, resources, status codes.
+    lesson_id: "3.2"
+    verified_on: "2026-11-18"
+
+  - id: django
+    name: Django
+    category: backend
+    verdict: later
+    why: Batteries-included Python framework. More to learn at once than FastAPI, more included.
+    verified_on: "2026-11-18"
+
+  - id: graphql
+    name: GraphQL
+    category: backend
+    verdict: skip
+    why: Solves a problem you do not have yet. Learn REST properly first.
+    verified_on: "2026-11-18"
+
+  # ── frontend ────────────────────────────────────────────────────────────
+  - id: html-css
+    name: HTML & CSS
+    category: frontend
+    verdict: later
+    why: The page itself. Enough to read and adjust what an agent produces is plenty at first.
+    verified_on: "2026-11-18"
+
+  - id: react
+    name: React
+    category: frontend
+    verdict: later
+    why: The dominant way to build interfaces. Learn it when you have an interface to build.
+    verified_on: "2026-11-18"
+
+  - id: tailwind
+    name: Tailwind CSS
+    category: frontend
+    verdict: later
+    why: Styling with utility classes. Agents produce it well, which makes it easy to read.
+    verified_on: "2026-11-18"
+
+  - id: nextjs
+    name: Next.js
+    category: frontend
+    verdict: skip
+    why: A framework on top of React. Two unfamiliar things at once is one too many.
+    verified_on: "2026-11-18"
+
+  # ── ai agents ───────────────────────────────────────────────────────────
+  - id: ollama
+    name: Ollama
+    category: ai-agents
+    verdict: learn-now
+    why: Runs a model on your own machine. No account, no quota, works offline.
+    lesson_id: "4.2"
+    verified_on: "2026-11-18"
+
+  - id: claude-code
+    name: Claude Code
+    category: ai-agents
+    verdict: learn-now
+    why: An agent that works in your terminal and edits your files directly.
+    lesson_id: "4.2"
+    verified_on: "2026-11-18"
+
+  - id: antigravity
+    name: Antigravity
+    category: ai-agents
+    verdict: learn-now
+    why: An agent-first editor. Worth trying alongside a terminal agent to feel the difference.
+    lesson_id: "4.2"
+    verified_on: "2026-11-18"
+
+  - id: gemini-cli
+    name: Gemini CLI
+    category: ai-agents
+    verdict: later
+    why: Another terminal agent. Once you can direct one, the others are the same skill.
+    verified_on: "2026-11-18"
+
+  - id: prompt-frameworks
+    name: Prompt frameworks
+    category: ai-agents
+    verdict: skip
+    why: A clear brief beats any template. Lesson 4.3 is the whole technique.
+    verified_on: "2026-11-18"
+
+  # ── cloud & deployment ──────────────────────────────────────────────────
+  - id: docker
+    name: Docker
+    category: cloud-deploy
+    verdict: learn-now
+    why: Packages the answers to "which version, which packages, which port" with your code.
+    lesson_id: "4.9"
+    verified_on: "2026-11-18"
+
+  - id: free-hosting
+    name: Free-tier hosts
+    category: cloud-deploy
+    verdict: later
+    why: Several offer a small free allowance. Check the vendor's own pricing page, today.
+    verified_on: "2026-11-18"
+
+  - id: aws
+    name: AWS
+    category: cloud-deploy
+    verdict: skip
+    why: Vast, and billed by the hour. Deploy something small somewhere simple first.
+    verified_on: "2026-11-18"
+
+  - id: kubernetes
+    name: Kubernetes
+    category: cloud-deploy
+    verdict: skip
+    why: Runs hundreds of containers. You have one. It would be all cost and no benefit.
+    verified_on: "2026-11-18"
+
+  # ── devops ──────────────────────────────────────────────────────────────
+  - id: git
+    name: Git
+    category: devops
+    verdict: learn-now
+    why: Your undo button. Non-negotiable the moment an agent can edit twelve files in four seconds.
+    lesson_id: "4.6"
+    verified_on: "2026-11-18"
+
+  - id: github
+    name: GitHub
+    category: devops
+    verdict: learn-now
+    why: Where your code lives and where people look at it. Your portfolio, in practice.
+    lesson_id: "5.3"
+    verified_on: "2026-11-18"
+
+  - id: terminal
+    name: The terminal
+    category: devops
+    verdict: learn-now
+    why: Six commands cover most of it, and agents live here. Avoiding it costs more than learning it.
+    lesson_id: "3.4"
+    verified_on: "2026-11-18"
+
+  - id: ci
+    name: CI (GitHub Actions)
+    category: devops
+    verdict: later
+    why: Runs your tests on every push. Worth adding once you have tests worth running.
+    verified_on: "2026-11-18"
+
+  - id: terraform
+    name: Terraform
+    category: devops
+    verdict: skip
+    why: Infrastructure as code, for infrastructure you do not have.
+    verified_on: "2026-11-18"

@@ -17,9 +17,9 @@ test('every visual beat id in content resolves to a registered visualizer', () =
   }
 })
 
-test('the five named visualizers are registered', () => {
+test('every named visualizer is registered', () => {
   expect(registeredVisualizers().sort()).toEqual(
-    ['er-builder', 'http-trace', 'instruction-tape', 'join-animator', 'loop-tracer'].sort(),
+    ['er-builder', 'http-trace', 'instruction-tape', 'join-animator', 'loop-tracer', 'tool-atlas'].sort(),
   )
 })
 
