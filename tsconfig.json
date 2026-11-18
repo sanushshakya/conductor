@@ -2,6 +2,7 @@
   "files": [],
   "references": [
     { "path": "./packages/shared" },
-    { "path": "./harness" }
+    { "path": "./harness" },
+    { "path": "./apps/main" }
   ]
 }
