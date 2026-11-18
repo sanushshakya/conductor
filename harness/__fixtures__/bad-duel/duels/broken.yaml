@@ -1,0 +1,23 @@
+duels:
+  - id: duel-out-of-range
+    lesson_id: "0.4"
+    language: python
+    brief: Find the bug.
+    code: |
+      print(1)
+    bug_line: 9
+    bug_kind: off-by-one
+    explanation: The line is out of range.
+    fixed_code: |
+      print(2)
+  - id: duel-identical-fix
+    lesson_id: "0.4"
+    language: python
+    brief: Find the bug.
+    code: |
+      print(1)
+    bug_line: 1
+    bug_kind: off-by-one
+    explanation: The fix is not a fix.
+    fixed_code: |
+      print(1)

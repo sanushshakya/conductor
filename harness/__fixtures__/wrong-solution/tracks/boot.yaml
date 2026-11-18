@@ -1,0 +1,20 @@
+track: boot
+title: Boot
+lessons:
+  - id: "9.1"
+    track: boot
+    title: A lesson whose solution is wrong
+    estimate_minutes: 5
+    beats:
+      - kind: code
+        language: python
+        exercise:
+          id: broken-ex
+          prompt: Print hello
+          solution: |
+            print("goodbye")
+          hints: ["a", "b", "c"]
+          grader:
+            kind: output-match
+            cases:
+              - expected: "hello"

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { SqlEngine } from './engine'
+import { SqlEngine } from '@conductor/core'
 import { fixtures } from '../content'
 
 /**

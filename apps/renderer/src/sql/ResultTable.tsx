@@ -1,4 +1,4 @@
-import type { ResultSet, SqlValue } from './engine'
+import type { ResultSet, SqlValue } from '@conductor/core'
 
 /**
  * A query's rows.

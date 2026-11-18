@@ -1,4 +1,4 @@
-import type { TableInfo } from './engine'
+import type { TableInfo } from '@conductor/core'
 
 /**
  * The live schema, always visible beside the editor.

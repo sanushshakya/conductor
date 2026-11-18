@@ -3,7 +3,7 @@ import { CodeEditor } from '../components/CodeEditor'
 import { ResultTable } from './ResultTable'
 import { SchemaPanel } from './SchemaPanel'
 import { useSqlEngine } from './useSqlEngine'
-import type { SqlRunResult } from './engine'
+import type { SqlRunResult } from '@conductor/core'
 
 interface Props {
   value: string

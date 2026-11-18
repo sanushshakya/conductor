@@ -5,10 +5,10 @@ import { CodeEditor } from '../components/CodeEditor'
 import { HintStack } from '../components/HintStack'
 import { CheckList } from '../components/CheckList'
 import { getVisualizer } from '../visualizers/registry'
-import { grade } from '../grading'
+import { grade } from '@conductor/core'
 import { sqlEngineFor } from '../sql/useSqlEngine'
 import { SqlPlayground } from '../sql/SqlPlayground'
-import { bootPython } from '../python/boot-python'
+import { bootPython } from '@conductor/core'
 import { host } from '../host'
 
 export interface BeatProps {

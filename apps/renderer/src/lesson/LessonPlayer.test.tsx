@@ -4,7 +4,7 @@ import type { Lesson } from '@conductor/shared'
 import { LessonPlayer } from './LessonPlayer'
 import { useProfile } from '../store/useProfile'
 import { freshProfile } from '@conductor/shared'
-import '../grading/graders'
+import '@conductor/core/grading/graders'
 import '../visualizers'
 
 function lesson(overrides: Partial<Lesson> = {}): Lesson {

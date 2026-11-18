@@ -1,0 +1,367 @@
+id: hospital-dbms
+track: sql
+title: "Boss: Hospital DBMS v1"
+estimate_minutes: 50
+brief: |
+  No new ideas here. Twelve real questions, and the hospital database you have
+  been working in all track.
+
+  This is the first thing you have built that you could show somebody. A ward
+  manager could ask any of these twelve questions on a normal Tuesday, and
+  every one of your answers is a query that works on a database you did not
+  write and have not seen the data of.
+
+  That last part is the point. Each query is run against **two** hospitals: the
+  one you know, and a different one with different patients. An answer typed in
+  by hand passes the first and fails the second. Only a query that genuinely
+  asks the question passes both — which is exactly the standard real work is
+  held to.
+
+  Take them in order. They get harder.
+
+criteria:
+  - id: roster
+    label: The full patient roster
+    exercise:
+      id: boss-dbms-roster
+      prompt: List full_name and admitted_on for every patient, oldest admission first.
+      starter: |
+        SELECT full_name FROM patients;
+      solution: |
+        SELECT full_name, admitted_on FROM patients ORDER BY admitted_on ASC;
+      hints:
+        - Two columns, then a sort.
+        - Ascending is the default, so ORDER BY admitted_on is enough.
+        - 'SELECT full_name, admitted_on FROM patients ORDER BY admitted_on;'
+      grader:
+        kind: sql-result
+        order_sensitive: true
+        reference: SELECT full_name, admitted_on FROM patients ORDER BY admitted_on ASC
+
+  - id: in-house
+    label: Who is still in the building
+    exercise:
+      id: boss-dbms-inhouse
+      prompt: Count the patients who have not been discharged, as a column called n.
+      starter: |
+        SELECT count(*) AS n FROM patients;
+      solution: |
+        SELECT count(*) AS n FROM patients WHERE discharged_on IS NULL;
+      hints:
+        - Not discharged means the discharge date is unknown.
+        - Unknown values need IS NULL, never = NULL.
+        - 'Add: WHERE discharged_on IS NULL'
+      grader:
+        kind: sql-result
+        reference: SELECT count(*) AS n FROM patients WHERE discharged_on IS NULL
+
+  - id: unknown-blood
+    label: Patients with no blood type on file
+    exercise:
+      id: boss-dbms-unknown-blood
+      prompt: List the full_name of every patient whose blood_type is not recorded.
+      starter: |
+        SELECT full_name FROM patients WHERE blood_type = '';
+      solution: |
+        SELECT full_name FROM patients WHERE blood_type IS NULL;
+      hints:
+        - An empty string and an unknown value are not the same thing.
+        - The starter looks for blank text, not for missing data.
+        - 'Use: WHERE blood_type IS NULL'
+      grader:
+        kind: sql-result
+        reference: SELECT full_name FROM patients WHERE blood_type IS NULL
+
+  - id: department-sizes
+    label: How many patients each department holds
+    exercise:
+      id: boss-dbms-dept-sizes
+      prompt: |
+        Show each department's name and its patient count as n, busiest first.
+        Departments with no patients must still appear, with 0.
+      starter: |
+        SELECT departments.name, count(patients.id) AS n
+        FROM departments
+        JOIN patients ON patients.department_id = departments.id
+        GROUP BY departments.id;
+      solution: |
+        SELECT departments.name, count(patients.id) AS n
+        FROM departments
+        LEFT JOIN patients ON patients.department_id = departments.id
+        GROUP BY departments.id
+        ORDER BY n DESC;
+      hints:
+        - An inner join would drop any department that happens to be empty.
+        - The sort is missing too.
+        - Use LEFT JOIN, then ORDER BY n DESC.
+      grader:
+        kind: sql-result
+        order_sensitive: true
+        reference: |
+          SELECT departments.name, count(patients.id) AS n
+          FROM departments
+          LEFT JOIN patients ON patients.department_id = departments.id
+          GROUP BY departments.id
+          ORDER BY n DESC
+
+  - id: appointment-mix
+    label: The appointment status breakdown
+    exercise:
+      id: boss-dbms-status-mix
+      prompt: Show each appointment status and how many appointments have it, as status and n, most common first.
+      starter: |
+        SELECT status FROM appointments;
+      solution: |
+        SELECT status, count(*) AS n
+        FROM appointments
+        GROUP BY status
+        ORDER BY n DESC;
+      hints:
+        - One row per distinct status means grouping by it.
+        - count(*) counts the rows inside each group.
+        - 'GROUP BY status, then ORDER BY n DESC'
+      grader:
+        kind: sql-result
+        order_sensitive: true
+        reference: SELECT status, count(*) AS n FROM appointments GROUP BY status ORDER BY n DESC
+
+  - id: missed
+    label: Patients who missed an appointment
+    exercise:
+      id: boss-dbms-missed
+      prompt: |
+        List the distinct full_name of every patient who has at least one
+        appointment with status 'missed', alphabetically.
+      starter: |
+        SELECT patients.full_name
+        FROM patients
+        JOIN appointments ON appointments.patient_id = patients.id
+        ORDER BY patients.full_name;
+      solution: |
+        SELECT DISTINCT patients.full_name
+        FROM patients
+        JOIN appointments ON appointments.patient_id = patients.id
+        WHERE appointments.status = 'missed'
+        ORDER BY patients.full_name;
+      hints:
+        - Two things are missing — the filter, and something to stop repeats.
+        - A patient with two missed appointments would otherwise appear twice.
+        - "Add WHERE appointments.status = 'missed' and SELECT DISTINCT"
+      grader:
+        kind: sql-result
+        order_sensitive: true
+        reference: |
+          SELECT DISTINCT patients.full_name
+          FROM patients
+          JOIN appointments ON appointments.patient_id = patients.id
+          WHERE appointments.status = 'missed'
+          ORDER BY patients.full_name
+
+  - id: doctor-load
+    label: Every doctor's workload
+    exercise:
+      id: boss-dbms-doctor-load
+      prompt: |
+        List every doctor's full_name and their appointment count as n, busiest
+        first then by name. Doctors with none must appear with 0.
+      starter: |
+        SELECT doctors.full_name, count(appointments.id) AS n
+        FROM doctors
+        LEFT JOIN appointments ON appointments.doctor_id = doctors.id
+        GROUP BY doctors.id;
+      solution: |
+        SELECT doctors.full_name, count(appointments.id) AS n
+        FROM doctors
+        LEFT JOIN appointments ON appointments.doctor_id = doctors.id
+        GROUP BY doctors.id
+        ORDER BY n DESC, doctors.full_name ASC;
+      hints:
+        - The join is already correct. Only the ordering is missing.
+        - Two sort keys are needed, because counts tie.
+        - 'ORDER BY n DESC, doctors.full_name ASC'
+      grader:
+        kind: sql-result
+        order_sensitive: true
+        reference: |
+          SELECT doctors.full_name, count(appointments.id) AS n
+          FROM doctors
+          LEFT JOIN appointments ON appointments.doctor_id = doctors.id
+          GROUP BY doctors.id
+          ORDER BY n DESC, doctors.full_name ASC
+
+  - id: three-table
+    label: Which department saw which patient
+    exercise:
+      id: boss-dbms-three-table
+      prompt: |
+        For every attended appointment, list the patient's full_name, the
+        doctor's full_name, and the department name — in that order. Sort by
+        patient name, then doctor name.
+      starter: |
+        SELECT patients.full_name, doctors.full_name
+        FROM appointments
+        JOIN patients ON patients.id = appointments.patient_id
+        JOIN doctors ON doctors.id = appointments.doctor_id
+        WHERE appointments.status = 'attended';
+      solution: |
+        SELECT patients.full_name, doctors.full_name, departments.name
+        FROM appointments
+        JOIN patients ON patients.id = appointments.patient_id
+        JOIN doctors ON doctors.id = appointments.doctor_id
+        JOIN departments ON departments.id = doctors.department_id
+        WHERE appointments.status = 'attended'
+        ORDER BY patients.full_name, doctors.full_name;
+      hints:
+        - A third table has to be reached, and it connects through the doctor.
+        - 'doctors.department_id holds a departments.id.'
+        - Add a third JOIN onto departments, then the two-key ORDER BY.
+      grader:
+        kind: sql-result
+        order_sensitive: true
+        reference: |
+          SELECT patients.full_name, doctors.full_name, departments.name
+          FROM appointments
+          JOIN patients ON patients.id = appointments.patient_id
+          JOIN doctors ON doctors.id = appointments.doctor_id
+          JOIN departments ON departments.id = doctors.department_id
+          WHERE appointments.status = 'attended'
+          ORDER BY patients.full_name, doctors.full_name
+
+  - id: busy-departments
+    label: Departments running hot
+    exercise:
+      id: boss-dbms-busy-departments
+      prompt: |
+        Show the name and appointment count as n for every department with more
+        than 10 appointments, busiest first.
+      starter: |
+        SELECT departments.name, count(appointments.id) AS n
+        FROM departments
+        JOIN doctors ON doctors.department_id = departments.id
+        JOIN appointments ON appointments.doctor_id = doctors.id
+        GROUP BY departments.id
+        WHERE count(appointments.id) > 10;
+      solution: |
+        SELECT departments.name, count(appointments.id) AS n
+        FROM departments
+        JOIN doctors ON doctors.department_id = departments.id
+        JOIN appointments ON appointments.doctor_id = doctors.id
+        GROUP BY departments.id
+        HAVING count(appointments.id) > 10
+        ORDER BY n DESC;
+      hints:
+        - The starter will not even run. A WHERE cannot come after a GROUP BY.
+        - A filter on a count has to happen after the groups exist.
+        - Replace the WHERE with HAVING, and add ORDER BY n DESC.
+      grader:
+        kind: sql-result
+        order_sensitive: true
+        reference: |
+          SELECT departments.name, count(appointments.id) AS n
+          FROM departments
+          JOIN doctors ON doctors.department_id = departments.id
+          JOIN appointments ON appointments.doctor_id = doctors.id
+          GROUP BY departments.id
+          HAVING count(appointments.id) > 10
+          ORDER BY n DESC
+
+  - id: live-medication
+    label: Patients still on medication
+    exercise:
+      id: boss-dbms-live-meds
+      prompt: |
+        List the distinct full_name of patients who have at least one
+        prescription that has not ended, alphabetically.
+      starter: |
+        SELECT DISTINCT patients.full_name
+        FROM patients
+        JOIN prescriptions ON prescriptions.patient_id = patients.id
+        ORDER BY patients.full_name;
+      solution: |
+        SELECT DISTINCT patients.full_name
+        FROM patients
+        JOIN prescriptions ON prescriptions.patient_id = patients.id
+        WHERE prescriptions.ended_on IS NULL
+        ORDER BY patients.full_name;
+      hints:
+        - A prescription that has not ended has no end date.
+        - That is the same NULL trap as before.
+        - 'Add: WHERE prescriptions.ended_on IS NULL'
+      grader:
+        kind: sql-result
+        order_sensitive: true
+        reference: |
+          SELECT DISTINCT patients.full_name
+          FROM patients
+          JOIN prescriptions ON prescriptions.patient_id = patients.id
+          WHERE prescriptions.ended_on IS NULL
+          ORDER BY patients.full_name
+
+  - id: wards-schema
+    label: A new table, properly keyed
+    exercise:
+      id: boss-dbms-wards
+      prompt: |
+        Create a wards table: id (INTEGER primary key), name (TEXT, not null,
+        unique), bed_count (INTEGER not null), and department_id (INTEGER)
+        referencing departments(id).
+      starter: |
+        CREATE TABLE wards (
+          id INTEGER PRIMARY KEY,
+          name TEXT
+        );
+      solution: |
+        CREATE TABLE wards (
+          id INTEGER PRIMARY KEY,
+          name TEXT NOT NULL UNIQUE,
+          bed_count INTEGER NOT NULL,
+          department_id INTEGER REFERENCES departments(id)
+        );
+      hints:
+        - Four columns, and three of them carry a rule.
+        - NOT NULL and UNIQUE can both sit on the same column.
+        - The pointer is REFERENCES departments(id).
+      grader:
+        kind: sql-schema
+        tables:
+          - name: wards
+            columns: [id, name, bed_count, department_id]
+            not_null: [name, bed_count]
+            unique: [name]
+            foreign_keys:
+              - column: department_id
+                references: departments.id
+
+  - id: safe-discharge
+    label: A discharge that cannot half-happen
+    exercise:
+      id: boss-dbms-safe-discharge
+      prompt: |
+        In one transaction, discharge patient 2 on '2026-11-18' and end all of
+        that patient's open prescriptions on the same date.
+      starter: |
+        UPDATE patients SET discharged_on = '2026-11-18' WHERE id = 2;
+      solution: |
+        BEGIN;
+        UPDATE patients SET discharged_on = '2026-11-18' WHERE id = 2;
+        UPDATE prescriptions SET ended_on = '2026-11-18'
+        WHERE patient_id = 2 AND ended_on IS NULL;
+        COMMIT;
+      hints:
+        - A discharge is two facts, and both must become true together.
+        - Only the prescriptions that are still open need an end date.
+        - 'Wrap both UPDATEs in BEGIN; ... COMMIT;'
+      grader:
+        kind: sql-mutation
+        # Guarantees patient 2 has an open prescription, so a solution that only
+        # discharges them cannot pass. Without this the criterion is satisfied
+        # by half the work, because this patient happens to have none on file.
+        setup: |
+          INSERT INTO prescriptions (patient_id, doctor_id, drug, dose_mg, started_on, ended_on)
+          VALUES (2, 1, 'Amoxicillin', 500, '2026-11-01', NULL);
+        verify: |
+          SELECT
+            (SELECT count(*) FROM patients WHERE id = 2 AND discharged_on = '2026-11-18') AS discharged,
+            (SELECT count(*) FROM prescriptions WHERE patient_id = 2 AND ended_on IS NULL) AS still_open
+        expected_rows:
+          - [1, 0]

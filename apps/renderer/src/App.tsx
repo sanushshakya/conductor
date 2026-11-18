@@ -13,8 +13,8 @@ import { LessonPlayer } from './lesson/LessonPlayer'
 import { TrackMap } from './components/TrackMap'
 import { XpBar } from './components/XpBar'
 import './visualizers'
-import './grading/graders'
-import './grading/sql-graders'
+import '@conductor/core/grading/graders'
+import '@conductor/core/grading/sql-graders'
 
 /**
  * The application shell: course spine on the left, the current lesson on the

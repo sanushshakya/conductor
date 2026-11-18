@@ -1,0 +1,1055 @@
+track: sql
+title: SQL
+blurb: Build a hospital database that survives being switched off.
+
+lessons:
+  - id: "2.1"
+    track: sql
+    title: Why databases exist
+    estimate_minutes: 7
+    objectives:
+      - Say what a database gives you that a list in a program does not
+      - Recognise when data has outgrown a variable
+    beats:
+      - kind: prose
+        body: |
+          In Track 1 you finished with this: a list of patients, each one a
+          dictionary, sorted into triage order.
+
+              patients = [
+                  {"name": "Ana", "severity": 4, "waiting_minutes": 50},
+                  {"name": "Ben", "severity": 2, "waiting_minutes": 20},
+                  {"name": "Cal", "severity": 5, "waiting_minutes": 5},
+              ]
+
+          It worked. Then the program ended, and every one of those patients
+          stopped existing.
+
+          That is the first problem. Here is the second: a real hospital has
+          tens of thousands of patients, and your triage sorter walks the entire
+          list every time it answers a question. With three patients that is
+          instant. With forty thousand, running sixty times a second across a
+          dozen screens, it is not.
+
+          And the third, which is the one that actually hurts: the moment two
+          people can change that list at the same time, you have no idea which
+          version is true.
+
+      - kind: prose
+        body: |
+          A **database** solves all three, and the first thing to understand is
+          that it is not an exotic new idea. Look at the shape of what you
+          already wrote:
+
+              a list        of dictionaries   with the same keys
+              ↓             ↓                 ↓
+              a table       of rows           with the same columns
+
+          **A table is a list of records.** You have been building tables since
+          lesson 1.5 without the word for it.
+
+          What the database adds is everything around that list: it survives
+          being switched off, it can find one row among millions without reading
+          the others, it refuses data that would break your rules, and it can
+          handle many people changing things at once without losing any of it.
+
+          The language you ask it questions in is **SQL**. It is about fifty
+          years old, it is everywhere, and — unusually for programming — it has
+          barely changed. What you learn here will still be true in twenty
+          years, which is not something that can be said about most of the
+          tooling around it.
+
+      - kind: quiz
+        exercise:
+          id: sql-why-databases
+          prompt: Your triage program is being deployed in a real emergency department.
+          solution: "[1,3]"
+          hints:
+            - Think about what happens between Tuesday night and Wednesday morning.
+            - Two of these are solved by a database, and two are not solved by anything here.
+            - Persistence and concurrent access are the database's job; a prettier interface is not.
+          grader:
+            kind: quiz
+            question: |
+              Which of these problems does moving to a database actually solve?
+            options:
+              - "The triage rules keep changing as doctors argue about them"
+              - "Patient records must still be there after the server restarts"
+              - "The waiting room screen needs to look nicer"
+              - "Three nurses admit patients at the same time without overwriting each other"
+            correct: [1, 3]
+            explanation: |
+              Persistence and safe concurrent access are exactly what a database
+              is for.
+
+              Changing rules is a people problem, and no storage engine will
+              settle an argument between doctors. The screen is a separate
+              program entirely — which is the whole point of Track 3.
+
+      - kind: checkpoint
+        body: |
+          A table is a list of records. A database is that list, made permanent,
+          fast, and safe to share.
+        unlocks: Next, you meet the hospital you are going to spend this track inside.
+
+  - id: "2.2"
+    track: sql
+    title: Tables, rows and columns
+    estimate_minutes: 9
+    objectives:
+      - Read a schema and know what each table holds
+      - Fetch whole rows and specific columns
+    beats:
+      - kind: prose
+        body: |
+          Here is a real hospital database. It is running right now, inside this
+          app — not a picture of one, not a simulation. Sixty patients,
+          fourteen doctors, six departments, and the appointments and
+          prescriptions that connect them.
+
+          Everything you type runs against actual SQLite, the same database
+          engine inside every phone on the planet. You can break it. There is a
+          **Reset database** button, and using it is encouraged — a database you
+          are afraid of is a database you will never understand.
+
+          The first question anyone asks a database is "what have you got?":
+
+              SELECT * FROM patients;
+
+          `SELECT` means *give me*. `*` means *every column*. `FROM patients`
+          names the table. The semicolon ends the statement.
+
+      - kind: sql
+        intro: |
+          Run it, then look at the schema on the right while you read the rows.
+        exercise:
+          id: sql-select-star
+          prompt: Fetch every column of every row in the departments table.
+          starter: |
+            SELECT
+          solution: |
+            SELECT * FROM departments;
+          hints:
+            - The pattern is SELECT, then what you want, then FROM, then where it lives.
+            - '* is shorthand for "every column".'
+            - 'Write: SELECT * FROM departments;'
+          grader:
+            kind: sql-result
+            reference: SELECT * FROM departments
+
+      - kind: prose
+        body: |
+          `SELECT *` is how you look around. It is rarely what you want in real
+          code, because it quietly fetches every column — including the ones you
+          do not need and the ones somebody adds next year.
+
+          Naming your columns is better in every way: it is faster, it keeps
+          working when the table changes, and it says out loud what the query is
+          actually for.
+
+              SELECT full_name, admitted_on FROM patients;
+
+          This is also your first encounter with something an AI agent gets
+          wrong constantly. Ask one for "patient data" and it will hand you
+          `SELECT *` — correct, confident, and quietly dragging a blood type and
+          a date of birth into a report that only needed a name.
+
+      - kind: sql
+        intro: Now ask for exactly what you need, and nothing else.
+        exercise:
+          id: sql-select-columns
+          prompt: Fetch just the full_name and blood_type of every patient.
+          starter: |
+            SELECT full_name FROM patients;
+          solution: |
+            SELECT full_name, blood_type FROM patients;
+          hints:
+            - Column names go after SELECT, separated by commas.
+            - Check the schema panel for the exact spelling of the blood type column.
+            - 'It is: SELECT full_name, blood_type FROM patients;'
+          grader:
+            kind: sql-result
+            reference: SELECT full_name, blood_type FROM patients
+
+      - kind: prose
+        body: |
+          Look at the `blood_type` column. Some rows say `NULL`.
+
+          `NULL` is not zero, and it is not an empty string. It means **we do
+          not know**. Nobody has recorded this patient's blood type yet.
+
+          That distinction matters more in a hospital than almost anywhere else,
+          and SQL takes it seriously: `NULL` is not equal to anything, including
+          itself. You will meet the consequences of that in the next lesson, and
+          it is one of the two or three things that trips up every single person
+          who learns SQL.
+
+      - kind: checkpoint
+        body: |
+          You can read a schema, fetch whole rows, and ask for specific columns.
+          You know that NULL means unknown, not empty.
+        unlocks: Next, you stop fetching everything and start asking questions.
+
+  - id: "2.3"
+    track: sql
+    title: Asking a real question
+    estimate_minutes: 10
+    objectives:
+      - Filter rows with WHERE
+      - Handle NULL correctly
+    beats:
+      - kind: prose
+        body: |
+          A hospital does not want all the patients. It wants *the ones still
+          here*, or *the ones admitted this week*, or *the ones in Cardiology*.
+
+          `WHERE` is how you say which rows:
+
+              SELECT full_name FROM patients WHERE blood_type = 'O+';
+
+          The database checks that condition against every row and keeps the
+          ones where it is true. Note the single quotes around text — SQL uses
+          `'single'` for text. Double quotes mean something different, and
+          mixing them up is a rite of passage.
+
+          You can combine conditions with `AND` and `OR`, and compare with
+          `=`, `!=`, `<`, `>`, `<=`, `>=`.
+
+      - kind: sql
+        exercise:
+          id: sql-where-basic
+          prompt: Find the full_name of every patient whose blood type is O+.
+          starter: |
+            SELECT full_name FROM patients;
+          solution: |
+            SELECT full_name FROM patients WHERE blood_type = 'O+';
+          hints:
+            - WHERE goes after the table name.
+            - Text values need single quotes around them.
+            - "Write: SELECT full_name FROM patients WHERE blood_type = 'O+';"
+          grader:
+            kind: sql-result
+            reference: SELECT full_name FROM patients WHERE blood_type = 'O+'
+
+      - kind: prose
+        body: |
+          Now the question the ward actually needs answered: **who is still
+          here?**
+
+          A patient who has gone home has a date in `discharged_on`. A patient
+          still in a bed has `NULL` there — nobody has discharged them.
+
+          So the obvious query is:
+
+              SELECT full_name FROM patients WHERE discharged_on = NULL;
+
+          Run that in your head first. It returns **nothing at all**.
+
+          Not an error. Not a warning. An empty result, which looks exactly like
+          "there are no patients in the hospital" — and there are twenty-three.
+
+      - kind: prose
+        body: |
+          Here is why. `NULL` means *unknown*. So `discharged_on = NULL` asks
+          "is this unknown value equal to this other unknown value?" — and the
+          honest answer is: **unknown**. Not true. The row is not kept.
+
+          Think of two sealed envelopes. Are the numbers inside them equal? You
+          cannot say. That is SQL's position, and it is right.
+
+          So SQL gives you a different operator for the question you meant:
+
+              WHERE discharged_on IS NULL
+              WHERE discharged_on IS NOT NULL
+
+          Remember this one. An AI agent will write `= NULL` for you eventually,
+          the query will run without complaint, and the ward screen will show an
+          empty hospital.
+
+      - kind: sql
+        intro: Find everyone still in the building.
+        exercise:
+          id: sql-is-null
+          prompt: Find the full_name of every patient who has not been discharged.
+          starter: |
+            SELECT full_name FROM patients WHERE discharged_on = NULL;
+          solution: |
+            SELECT full_name FROM patients WHERE discharged_on IS NULL;
+          hints:
+            - Run the starter first. Count the rows it returns, then count the patients you expect.
+            - '= compares two values. NULL is not a value you can compare to.'
+            - 'Use IS NULL instead of = NULL.'
+          grader:
+            kind: sql-result
+            reference: SELECT full_name FROM patients WHERE discharged_on IS NULL
+
+      - kind: sql
+        intro: |
+          One more, combining two conditions. Patients admitted in 2026 who are
+          still here.
+        exercise:
+          id: sql-where-and
+          prompt: Find full_name and admitted_on for patients still here whose admitted_on is on or after 2026-06-01.
+          starter: |
+            SELECT full_name, admitted_on FROM patients
+            WHERE discharged_on IS NULL;
+          solution: |
+            SELECT full_name, admitted_on FROM patients
+            WHERE discharged_on IS NULL AND admitted_on >= '2026-06-01';
+          hints:
+            - Dates are stored as text in the form YYYY-MM-DD, which means they sort and compare correctly.
+            - Join two conditions with AND.
+            - "Add: AND admitted_on >= '2026-06-01'"
+          grader:
+            kind: sql-result
+            reference: |
+              SELECT full_name, admitted_on FROM patients
+              WHERE discharged_on IS NULL AND admitted_on >= '2026-06-01'
+
+      - kind: checkpoint
+        body: |
+          You can filter rows, combine conditions, and handle NULL correctly —
+          which puts you ahead of a great deal of code already running in
+          production somewhere.
+        unlocks: Next, you make the database do the counting.
+
+  - id: "2.4"
+    track: sql
+    title: Let the database do the work
+    estimate_minutes: 10
+    objectives:
+      - Sort and limit results
+      - Count and average without fetching every row
+    beats:
+      - kind: prose
+        body: |
+          "How busy is the emergency department?"
+
+          You could fetch every appointment and count them in Python. That means
+          sending thousands of rows across a wire so your program can look at
+          them and throw them away.
+
+          Or you can ask the database for the number, and it sends you one row.
+
+              SELECT count(*) FROM appointments;
+
+          `count(*)` is an **aggregate**: it takes many rows and returns one
+          value. The others you will use constantly are `sum()`, `avg()`,
+          `min()` and `max()`.
+
+          This is the single biggest performance idea in this track, and it is
+          not subtle. Do the work where the data already is.
+
+      - kind: sql
+        exercise:
+          id: sql-count
+          prompt: Count how many appointments have the status 'missed'.
+          starter: |
+            SELECT count(*) FROM appointments;
+          solution: |
+            SELECT count(*) FROM appointments WHERE status = 'missed';
+          hints:
+            - You already know how to keep only some rows.
+            - count(*) counts whatever rows survive the WHERE.
+            - "Write: SELECT count(*) FROM appointments WHERE status = 'missed';"
+          grader:
+            kind: sql-result
+            reference: SELECT count(*) FROM appointments WHERE status = 'missed'
+
+      - kind: prose
+        body: |
+          `ORDER BY` sorts, `LIMIT` cuts the list short, and together they answer
+          every "top ten" question ever asked:
+
+              SELECT full_name, admitted_on FROM patients
+              ORDER BY admitted_on DESC
+              LIMIT 5;
+
+          `DESC` is descending — newest first. `ASC` is ascending, and it is the
+          default, so you rarely type it.
+
+          The order matters: `WHERE` first, then `ORDER BY`, then `LIMIT`. SQL
+          is strict about this sequence, and the error when you get it wrong is
+          one of the less helpful ones.
+
+      - kind: sql
+        intro: The five most recently admitted patients who are still here.
+        exercise:
+          id: sql-order-limit
+          prompt: List full_name and admitted_on for the 5 most recently admitted patients who have not been discharged, newest first.
+          starter: |
+            SELECT full_name, admitted_on FROM patients
+            WHERE discharged_on IS NULL;
+          solution: |
+            SELECT full_name, admitted_on FROM patients
+            WHERE discharged_on IS NULL
+            ORDER BY admitted_on DESC
+            LIMIT 5;
+          hints:
+            - 'Two things are missing: the sort, and the cut-off.'
+            - DESC puts the largest — here, the latest date — first.
+            - 'Add: ORDER BY admitted_on DESC then LIMIT 5'
+          grader:
+            kind: sql-result
+            orderSensitive: true
+            reference: |
+              SELECT full_name, admitted_on FROM patients
+              WHERE discharged_on IS NULL
+              ORDER BY admitted_on DESC
+              LIMIT 5
+
+      - kind: sql
+        intro: |
+          One average. Round it to two decimal places so the answer is readable.
+        exercise:
+          id: sql-avg
+          prompt: Find the average dose_mg across all prescriptions, rounded to 2 decimal places.
+          starter: |
+            SELECT dose_mg FROM prescriptions;
+          solution: |
+            SELECT round(avg(dose_mg), 2) FROM prescriptions;
+          hints:
+            - avg() works the same way count() does.
+            - round() takes the value first and the number of decimal places second.
+            - 'Write: SELECT round(avg(dose_mg), 2) FROM prescriptions;'
+          grader:
+            kind: sql-result
+            reference: SELECT round(avg(dose_mg), 2) FROM prescriptions
+
+      - kind: checkpoint
+        body: |
+          You can make the database count, average, sort and trim — so your
+          program receives answers instead of raw material.
+        unlocks: Next, you start changing things.
+
+  - id: "2.5"
+    track: sql
+    title: Admit, treat, discharge
+    estimate_minutes: 11
+    objectives:
+      - Add, change and remove rows
+      - Never write an UPDATE without a WHERE again
+    beats:
+      - kind: prose
+        body: |
+          Reading is half of it. A hospital also admits people, updates their
+          records, and occasionally deletes something that should never have
+          been entered.
+
+          **Adding a row:**
+
+              INSERT INTO departments (name, floor, phone)
+              VALUES ('Neurology', 6, '555-0107');
+
+          Name the columns, then give the values in the same order. You can skip
+          `id` — the database assigns it.
+
+      - kind: sql
+        intro: Admit a new patient. The checks look at the state of the table afterwards, not at what you typed.
+        exercise:
+          id: sql-insert
+          prompt: "Admit a patient: full_name 'Rina Gurung', date_of_birth '1991-04-12', blood_type 'A+', admitted_on '2026-11-18', department_id 1."
+          starter: |
+            INSERT INTO patients (full_name, date_of_birth)
+            VALUES ('Rina Gurung', '1991-04-12');
+          solution: |
+            INSERT INTO patients (full_name, date_of_birth, blood_type, admitted_on, department_id)
+            VALUES ('Rina Gurung', '1991-04-12', 'A+', '2026-11-18', 1);
+          hints:
+            - The starter is missing three of the five columns the prompt asks for.
+            - Every column you name needs a matching value, in the same order.
+            - Add blood_type, admitted_on and department_id to both lists.
+          grader:
+            kind: sql-mutation
+            verify: |
+              SELECT full_name, blood_type, admitted_on, department_id
+              FROM patients WHERE full_name = 'Rina Gurung'
+            expected_rows:
+              - ["Rina Gurung", "A+", "2026-11-18", 1]
+
+      - kind: prose
+        body: |
+          **Changing rows** uses `UPDATE`, and this is where you need to be
+          careful:
+
+              UPDATE patients
+              SET discharged_on = '2026-11-18'
+              WHERE id = 7;
+
+          Now read that same statement with the last line deleted:
+
+              UPDATE patients SET discharged_on = '2026-11-18';
+
+          That discharges **every patient in the hospital**. It runs instantly.
+          It does not ask. There is no undo.
+
+          An `UPDATE` or `DELETE` without a `WHERE` is the most expensive single
+          line in this entire course. Professionals write the `WHERE` clause
+          first and the `SET` second, as a habit, specifically because of this.
+
+          Try it. Wreck the table, then press **Reset database**. Doing it here,
+          once, on purpose, is how it stops being abstract.
+
+      - kind: sql
+        intro: Discharge exactly one patient — the one with the lowest id who is still here.
+        exercise:
+          id: sql-update
+          prompt: Set discharged_on to '2026-11-18' for the still-admitted patient with the smallest id.
+          starter: |
+            UPDATE patients SET discharged_on = '2026-11-18';
+          solution: |
+            UPDATE patients
+            SET discharged_on = '2026-11-18'
+            WHERE id = (SELECT min(id) FROM patients WHERE discharged_on IS NULL);
+          hints:
+            - The starter has no WHERE, so it changes every row. How many patients should still be here afterwards?
+            - You can put a query inside a WHERE — it is just a value.
+            - 'Use: WHERE id = (SELECT min(id) FROM patients WHERE discharged_on IS NULL)'
+          grader:
+            kind: sql-mutation
+            verify: SELECT count(*) AS n FROM patients WHERE discharged_on IS NULL
+            expected_rows:
+              - [22]
+
+      - kind: prose
+        body: |
+          **Removing rows** is `DELETE FROM table WHERE ...`, with exactly the
+          same warning attached, and one extra wrinkle you will meet properly in
+          lesson 2.9: the database will often *refuse* to delete a row, because
+          other rows depend on it.
+
+          That refusal is a feature. A patient record that vanishes while their
+          appointments still point at it is far worse than an error message.
+
+      - kind: checkpoint
+        body: |
+          You can add, change and remove rows — and you have seen what happens
+          when a WHERE goes missing.
+        unlocks: Next, you design the schema instead of being handed one.
+
+  - id: "2.6"
+    track: sql
+    title: Designing the schema
+    estimate_minutes: 12
+    objectives:
+      - Explain why the same fact should be stored in exactly one place
+      - Create a table with a primary key and a foreign key
+    beats:
+      - kind: prose
+        body: |
+          Someone hands you this spreadsheet and asks you to "put it in a
+          database":
+
+              patient    | department | dept_floor | dept_phone | doctor
+              Ana Rai    | Cardiology | 3          | 555-0102   | Dr Lama
+              Ben Thapa  | Cardiology | 3          | 555-0102   | Dr Lama
+              Cal Magar  | Cardiolgy  | 3          | 555-0102   | Dr Rai
+
+          Look at the third row. `Cardiolgy`. One typo, and that patient is now
+          in a department that does not exist. Every report that groups by
+          department will quietly show two cardiology departments forever.
+
+          And when Cardiology moves to floor 4, you have to update it in every
+          single row — and if you miss one, the database now disagrees with
+          itself and there is no way to tell which answer is right.
+
+      - kind: prose
+        body: |
+          The fix is a single rule, and it is the whole of what people mean when
+          they say **normalisation**:
+
+          > Every fact lives in exactly one place.
+
+          Cardiology's floor is a fact about Cardiology, not about Ana. So it
+          belongs in a `departments` table, once. Patients then *point at* that
+          row instead of repeating it:
+
+              departments:  id=2, name='Cardiology', floor=3, phone='555-0102'
+              patients:     id=1, full_name='Ana Rai', department_id=2
+
+          That pointer is a **foreign key**. `department_id` holds the `id` of a
+          row in `departments`, and the database will enforce that: you cannot
+          point at a department that does not exist, and you cannot delete a
+          department while patients still point at it.
+
+          The typo becomes impossible. The floor change happens once.
+
+      - kind: visual
+        visualizer: er-builder
+        caption: Click a column to make it a primary key. The checks are the ones the database would make.
+
+      - kind: prose
+        body: |
+          Two kinds of key, and the difference is worth getting straight:
+
+          - A **primary key** identifies a row *within its own table*. Usually
+            `id`. It must be unique and must never be empty — otherwise you have
+            no reliable way to say "that row, that one specifically".
+          - A **foreign key** is a column holding another table's primary key.
+            It is how one row points at another.
+
+          Now build one. The hospital needs `wards`: each ward has a name and
+          belongs to a department.
+
+      - kind: sql
+        intro: |
+          Create the table. The checks read the real schema afterwards, so how
+          you lay the statement out is up to you.
+        exercise:
+          id: sql-create-wards
+          prompt: |
+            Create a wards table with: id (INTEGER, primary key), name (TEXT, not
+            null), and department_id (INTEGER) that references departments(id).
+          starter: |
+            CREATE TABLE wards (
+              id INTEGER
+            );
+          solution: |
+            CREATE TABLE wards (
+              id INTEGER PRIMARY KEY,
+              name TEXT NOT NULL,
+              department_id INTEGER REFERENCES departments(id)
+            );
+          hints:
+            - PRIMARY KEY goes after the column type, on the same line.
+            - NOT NULL is how you say a column can never be empty.
+            - 'The pointer is written REFERENCES departments(id) after the column type.'
+          grader:
+            kind: sql-schema
+            tables:
+              - name: wards
+                columns: [id, name, department_id]
+                not_null: [name]
+                foreign_keys:
+                  - column: department_id
+                    references: departments.id
+
+      - kind: checkpoint
+        body: |
+          You can design a schema where each fact is stored once, and express it
+          in SQL with primary and foreign keys.
+        unlocks: Next, you put the pieces back together.
+
+  - id: "2.7"
+    track: sql
+    title: JOIN
+    estimate_minutes: 14
+    objectives:
+      - Combine two tables on a shared key
+      - Know what INNER silently throws away
+    beats:
+      - kind: prose
+        body: |
+          Splitting the data apart was the right thing to do. But now a simple
+          question — *which doctor saw which patient?* — needs facts from two
+          tables at once.
+
+          `JOIN` puts them back together, for the length of one query:
+
+              SELECT patients.full_name, doctors.full_name
+              FROM patients
+              JOIN appointments ON appointments.patient_id = patients.id
+              JOIN doctors ON doctors.id = appointments.doctor_id;
+
+          The `ON` clause is the important part. It says *how* rows pair up:
+          take a row from the left, find rows on the right where this is equal
+          to that.
+
+          Most people's mental picture of JOIN is "glue two tables side by
+          side", and that picture is why JOINs feel hard. What actually happens
+          is a search, row by row. Step through it below before you write one.
+
+      - kind: visual
+        visualizer: join-animator
+        caption: Step through one row at a time. Watch what happens to Dr Thapa, who has no appointments.
+
+      - kind: prose
+        body: |
+          Three things you just watched, which are the three things that matter:
+
+          - **One row can produce several.** Dr Rai has two appointments, so Dr
+            Rai appears twice. The result has more rows than the table you
+            started from, and that is correct.
+          - **INNER JOIN drops the unmatched.** Dr Thapa has no appointments and
+            vanishes completely. No error, no warning.
+          - **LEFT JOIN keeps them, padded with NULL.** Every left row survives.
+
+          That second point is the one to remember. "Show me every doctor and
+          how many appointments they have" written with an inner join silently
+          omits the doctors with none — which are often exactly the rows the
+          question was about. The query runs, the report looks plausible, and it
+          is wrong.
+
+          An AI agent writes `JOIN` by default. Choosing between `JOIN` and
+          `LEFT JOIN` requires knowing what the question is *for*, which is
+          yours to decide, not its.
+
+      - kind: sql
+        intro: Start with the inner join — appointments that definitely have both ends.
+        exercise:
+          id: sql-join-inner
+          prompt: |
+            List each appointment's reason alongside the patient's full_name,
+            for every appointment. Select the patient name first, then the reason.
+          starter: |
+            SELECT full_name, reason
+            FROM appointments;
+          solution: |
+            SELECT patients.full_name, appointments.reason
+            FROM appointments
+            JOIN patients ON patients.id = appointments.patient_id;
+          hints:
+            - The starter fails because reason and full_name live in different tables.
+            - 'The link is appointments.patient_id, which holds a patients.id.'
+            - 'Add: JOIN patients ON patients.id = appointments.patient_id'
+          grader:
+            kind: sql-result
+            reference: |
+              SELECT patients.full_name, appointments.reason
+              FROM appointments
+              JOIN patients ON patients.id = appointments.patient_id
+
+      - kind: sql
+        intro: |
+          Now the one that needs a LEFT JOIN. Every doctor must appear — even
+          the ones with nothing booked.
+        exercise:
+          id: sql-join-left
+          prompt: |
+            List every doctor's full_name and how many appointments they have, as
+            a column called appointment_count. Doctors with none must appear with 0.
+          starter: |
+            SELECT doctors.full_name, count(appointments.id) AS appointment_count
+            FROM doctors
+            JOIN appointments ON appointments.doctor_id = doctors.id
+            GROUP BY doctors.id;
+          solution: |
+            SELECT doctors.full_name, count(appointments.id) AS appointment_count
+            FROM doctors
+            LEFT JOIN appointments ON appointments.doctor_id = doctors.id
+            GROUP BY doctors.id;
+          hints:
+            - Run the starter and count the rows. Then count the doctors. Where did the others go?
+            - An inner join keeps only doctors that matched an appointment.
+            - Change JOIN to LEFT JOIN so every doctor survives.
+          grader:
+            kind: sql-result
+            reference: |
+              SELECT doctors.full_name, count(appointments.id) AS appointment_count
+              FROM doctors
+              LEFT JOIN appointments ON appointments.doctor_id = doctors.id
+              GROUP BY doctors.id
+
+      - kind: checkpoint
+        body: |
+          You can join tables on a key, and you know which join type throws rows
+          away. That is the hardest idea in this track, and it is behind you.
+        unlocks: Next, you summarise across groups.
+
+  - id: "2.8"
+    track: sql
+    title: Grouping and reporting
+    estimate_minutes: 11
+    objectives:
+      - Produce one summary row per group
+      - Filter groups with HAVING rather than WHERE
+    beats:
+      - kind: prose
+        body: |
+          `count(*)` collapsed a whole table into one number. `GROUP BY`
+          collapses it into *one number per group*:
+
+              SELECT status, count(*) AS n
+              FROM appointments
+              GROUP BY status;
+
+          That gives one row per distinct status. This is where a database stops
+          being storage and starts being a reporting engine — the query above
+          replaces an entire afternoon of spreadsheet work.
+
+          The rule to internalise: every column in your `SELECT` must either be
+          **in the GROUP BY**, or be **inside an aggregate**. Anything else is
+          asking for one value from a group of many, and the answer would be
+          arbitrary.
+
+      - kind: sql
+        exercise:
+          id: sql-group-by
+          prompt: Count appointments per status, as status and a column called n.
+          starter: |
+            SELECT status, count(*) AS n
+            FROM appointments;
+          solution: |
+            SELECT status, count(*) AS n
+            FROM appointments
+            GROUP BY status;
+          hints:
+            - Without a GROUP BY you get one row for the whole table.
+            - Group by the column you want one row of.
+            - 'Add: GROUP BY status'
+          grader:
+            kind: sql-result
+            reference: SELECT status, count(*) AS n FROM appointments GROUP BY status
+
+      - kind: prose
+        body: |
+          Now: *which departments are overloaded?*
+
+          You want departments with more than ten appointments. The instinct is
+          `WHERE count(*) > 10`, and it does not work — SQL will refuse it.
+
+          Here is why, and it is worth understanding rather than memorising.
+          `WHERE` runs **before** the grouping, when there are still individual
+          rows and no counts exist yet. The count only comes into existence once
+          the groups are formed.
+
+          So SQL gives you a second filter that runs *after* grouping:
+
+              HAVING count(*) > 10
+
+          `WHERE` filters rows. `HAVING` filters groups. Same idea, different
+          moment.
+
+      - kind: sql
+        intro: |
+          This one needs two joins and a HAVING. It is the hardest query in the
+          track, and it is a report a real hospital would actually run.
+        exercise:
+          id: sql-having
+          prompt: |
+            For each department with more than 10 appointments, show the
+            department name and the appointment count as n, busiest first.
+          starter: |
+            SELECT departments.name, count(appointments.id) AS n
+            FROM departments
+            JOIN doctors ON doctors.department_id = departments.id
+            JOIN appointments ON appointments.doctor_id = doctors.id
+            GROUP BY departments.name;
+          solution: |
+            SELECT departments.name, count(appointments.id) AS n
+            FROM departments
+            JOIN doctors ON doctors.department_id = departments.id
+            JOIN appointments ON appointments.doctor_id = doctors.id
+            GROUP BY departments.name
+            HAVING count(appointments.id) > 10
+            ORDER BY n DESC;
+          hints:
+            - The joins are already right. Two clauses are missing from the end.
+            - A filter on a count has to run after grouping, so it is not a WHERE.
+            - 'Add HAVING count(appointments.id) > 10 and then ORDER BY n DESC'
+          grader:
+            kind: sql-result
+            order_sensitive: true
+            reference: |
+              SELECT departments.name, count(appointments.id) AS n
+              FROM departments
+              JOIN doctors ON doctors.department_id = departments.id
+              JOIN appointments ON appointments.doctor_id = doctors.id
+              GROUP BY departments.name
+              HAVING count(appointments.id) > 10
+              ORDER BY n DESC
+
+      - kind: checkpoint
+        body: |
+          You can turn a table of raw events into a report — grouped,
+          filtered and ordered — in a single statement.
+        unlocks: Next, you make the database refuse bad data.
+
+  - id: "2.9"
+    track: sql
+    title: When the database says no
+    estimate_minutes: 10
+    objectives:
+      - Read a constraint violation as a protection rather than an obstacle
+      - Explain why an index makes a query fast
+    beats:
+      - kind: prose
+        body: |
+          Try this, and expect it to fail:
+
+              INSERT INTO appointments (patient_id, doctor_id, scheduled_for, status)
+              VALUES (1, 999, '2026-12-29', 'booked');
+
+              FOREIGN KEY constraint failed
+
+          There is no doctor 999. The database refused to create an appointment
+          with a doctor who does not exist.
+
+          This is the part beginners fight and professionals rely on. That
+          rejected row is a bug caught at the moment it happened, by the one
+          component that cannot be talked out of it. Without the constraint, the
+          row goes in, nothing complains, and six weeks later a ward screen
+          shows an appointment with a blank doctor and nobody can explain it.
+
+          The error is not in your way. It is the system working.
+
+      - kind: prose
+        body: |
+          The constraints you will use constantly:
+
+          - **PRIMARY KEY** — this identifies the row; unique, never empty.
+          - **FOREIGN KEY** — this points at a real row in another table.
+          - **NOT NULL** — this value must be supplied.
+          - **UNIQUE** — no two rows may share this value.
+          - **CHECK** — this value must satisfy a condition.
+
+          The hospital's `appointments.status` has a `CHECK` on it, restricting
+          it to `booked`, `attended`, `missed` or `cancelled`. Try inserting
+          `'maybe'` and watch it bounce.
+
+          Protections also run in the other direction. `DROP TABLE patients`
+          fails on this database — appointments still point at those patients,
+          and the database will not orphan them. Try it; the Reset button is
+          there.
+
+      - kind: sql
+        intro: |
+          This insert is rejected. Change it so the hospital accepts it — the
+          appointment should belong to patient 1 and the doctor with id 2.
+        exercise:
+          id: sql-fix-fk
+          prompt: Fix this INSERT so it is accepted, keeping the date and the status.
+          starter: |
+            INSERT INTO appointments (patient_id, doctor_id, scheduled_for, status)
+            VALUES (1, 999, '2026-12-29', 'booked');
+          solution: |
+            INSERT INTO appointments (patient_id, doctor_id, scheduled_for, status)
+            VALUES (1, 2, '2026-12-29', 'booked');
+          hints:
+            - Read the error. Which of the two ids does not exist?
+            - 'Check for yourself: SELECT id FROM doctors; — is 999 in the list?'
+            - Replace 999 with 2.
+          grader:
+            kind: sql-mutation
+            verify: |
+              SELECT patient_id, doctor_id, status FROM appointments
+              WHERE scheduled_for = '2026-12-29'
+            expected_rows:
+              - [1, 2, "booked"]
+
+      - kind: prose
+        body: |
+          One more idea, because it explains most of what makes databases fast.
+
+          `SELECT * FROM patients WHERE id = 47` on sixty rows is instant
+          however it is done. On sixty million, the difference between an
+          approach that reads every row and one that does not is the difference
+          between a minute and a millisecond.
+
+          An **index** is a sorted lookup structure kept beside the table, so
+          the database can jump straight to a value instead of scanning. It is
+          the same reason a dictionary is alphabetical.
+
+          Indexes are not free — they take space, and every write has to update
+          them. The rule of thumb: index the columns you filter and join on,
+          which in this database means the foreign keys. Both of the ones that
+          matter are already there; look for `idx_appointments_patient` in the
+          schema.
+
+      - kind: checkpoint
+        body: |
+          You can read a constraint violation as the database doing its job, and
+          you know what an index buys and what it costs.
+        unlocks: Next, the one that protects you when something fails halfway.
+
+  - id: "2.10"
+    track: sql
+    title: All of it, or none of it
+    estimate_minutes: 10
+    objectives:
+      - Group statements into a transaction
+      - Explain what happens when the power fails mid-operation
+    beats:
+      - kind: prose
+        body: |
+          Discharging a patient is not one change. It is at least two: set their
+          discharge date, and close off the prescriptions they are no longer
+          taking.
+
+          Run them as two separate statements and there is a gap between them.
+          It is tiny. It is also real, and in that gap the server can lose power,
+          the process can be killed, or the second statement can fail on a
+          constraint.
+
+          Now the patient is discharged and still on live medication.
+
+          Nothing you can do with careful ordering fixes this. The problem is
+          that two separate statements are two separate events, and the universe
+          is allowed to interrupt you between them.
+
+      - kind: prose
+        body: |
+          A **transaction** makes several statements into one event:
+
+              BEGIN;
+                UPDATE patients SET discharged_on = '2026-11-18' WHERE id = 1;
+                UPDATE prescriptions SET ended_on = '2026-11-18' WHERE patient_id = 1;
+              COMMIT;
+
+          Between `BEGIN` and `COMMIT`, nothing is visible to anyone else and
+          nothing is permanent. At `COMMIT`, all of it lands at once. If
+          anything goes wrong — an error, a crash, a power cut — the database
+          **rolls back** to exactly how it was before `BEGIN`, as though you had
+          never started.
+
+          You can also roll back deliberately with `ROLLBACK;`, which is how
+          "undo" is implemented in essentially every system that has one.
+
+          All or nothing. That is the guarantee, and it is why banks and
+          hospitals run on databases rather than files.
+
+      - kind: sql
+        intro: |
+          Discharge patient 1 and close their prescriptions, as one transaction.
+        exercise:
+          id: sql-transaction
+          prompt: |
+            In a single transaction, set patients.discharged_on to '2026-11-18'
+            for patient 1, and set prescriptions.ended_on to '2026-11-18' for
+            that patient's prescriptions.
+          starter: |
+            UPDATE patients SET discharged_on = '2026-11-18' WHERE id = 1;
+          solution: |
+            BEGIN;
+            UPDATE patients SET discharged_on = '2026-11-18' WHERE id = 1;
+            UPDATE prescriptions SET ended_on = '2026-11-18' WHERE patient_id = 1;
+            COMMIT;
+          hints:
+            - The starter does half the job. What else has to be true after a discharge?
+            - Both statements need to land together, or neither should.
+            - 'Wrap both UPDATEs in BEGIN; ... COMMIT;'
+          grader:
+            kind: sql-mutation
+            # Pins the precondition rather than relying on the fixture happening
+            # to give patient 1 an open prescription: without one, discharging
+            # alone would satisfy the check and the lesson would teach nothing.
+            setup: |
+              INSERT INTO prescriptions (patient_id, doctor_id, drug, dose_mg, started_on, ended_on)
+              VALUES (1, 1, 'Paracetamol', 500, '2026-11-01', NULL);
+            verify: |
+              SELECT
+                (SELECT count(*) FROM patients WHERE id = 1 AND discharged_on = '2026-11-18') AS discharged,
+                (SELECT count(*) FROM prescriptions WHERE patient_id = 1 AND ended_on IS NULL) AS still_open
+            expected_rows:
+              - [1, 0]
+
+      - kind: prose
+        body: |
+          You now have the four ideas that everything else in databases is built
+          on: tables with keys, queries that filter and join, constraints that
+          refuse bad data, and transactions that keep related changes together.
+
+          There is more SQL — window functions, CTEs, query plans — and you will
+          pick it up when you meet a problem that needs it, which is the right
+          time to learn it.
+
+          What comes next is different. Right now this database only exists
+          inside this app. Track 3 puts it behind a web API, so other programs —
+          a ward screen, a phone app, something an agent builds for you — can
+          use it.
+
+      - kind: checkpoint
+        body: |
+          Track 2 is done. You can design a schema, query it properly, protect
+          it, and change it safely.
+        unlocks: The Hospital DBMS boss project, then Track 3.

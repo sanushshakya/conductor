@@ -18,6 +18,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@conductor/shared': resolve(__dirname, 'packages/shared/src'),
+      '@conductor/core': resolve(__dirname, 'packages/core/src'),
       '@': resolve(__dirname, 'apps/renderer/src'),
     },
   },

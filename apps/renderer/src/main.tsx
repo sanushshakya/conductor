@@ -2,7 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import wasmUrl from 'sql.js/dist/sql-wasm.wasm?url'
 import { App } from './App'
-import { setSqlWasmLocator } from './sql/engine'
+import { setSqlWasmLocator } from '@conductor/core'
 import './styles.css'
 
 // sql.js looks for its .wasm next to its own JS, which is not where a bundler

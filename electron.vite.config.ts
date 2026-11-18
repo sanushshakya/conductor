@@ -11,11 +11,12 @@ import { conductorContent } from './tools/vite-content-plugin'
  * alternative is a build step that must run before the app can start.
  */
 const shared = resolve(__dirname, 'packages/shared/src')
+const core = resolve(__dirname, 'packages/core/src')
 
 export default defineConfig({
   main: {
     plugins: [externalizeDepsPlugin()],
-    resolve: { alias: { '@conductor/shared': shared } },
+    resolve: { alias: { '@conductor/shared': shared, '@conductor/core': core } },
     build: {
       lib: { entry: resolve(__dirname, 'apps/main/src/index.ts') },
       outDir: 'out/main',
@@ -23,7 +24,7 @@ export default defineConfig({
   },
   preload: {
     plugins: [externalizeDepsPlugin()],
-    resolve: { alias: { '@conductor/shared': shared } },
+    resolve: { alias: { '@conductor/shared': shared, '@conductor/core': core } },
     build: {
       lib: { entry: resolve(__dirname, 'apps/preload/src/index.ts') },
       outDir: 'out/preload',
@@ -35,6 +36,7 @@ export default defineConfig({
     resolve: {
       alias: {
         '@conductor/shared': shared,
+        '@conductor/core': core,
         '@': resolve(__dirname, 'apps/renderer/src'),
       },
     },
