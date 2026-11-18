@@ -14,6 +14,7 @@ import { TrackMap } from './components/TrackMap'
 import { XpBar } from './components/XpBar'
 import './visualizers'
 import './grading/graders'
+import './grading/sql-graders'
 
 /**
  * The application shell: course spine on the left, the current lesson on the

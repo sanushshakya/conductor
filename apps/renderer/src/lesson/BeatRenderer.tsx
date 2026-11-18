@@ -6,6 +6,8 @@ import { HintStack } from '../components/HintStack'
 import { CheckList } from '../components/CheckList'
 import { getVisualizer } from '../visualizers/registry'
 import { grade } from '../grading'
+import { sqlEngineFor } from '../sql/useSqlEngine'
+import { SqlPlayground } from '../sql/SqlPlayground'
 import { bootPython } from '../python/boot-python'
 import { host } from '../host'
 
@@ -56,11 +58,15 @@ export function BeatRenderer(props: BeatProps) {
     }
 
     case 'code':
+      return (
+        <CodeExerciseBeat intro={beat.intro} language={beat.language} exercise={beat.exercise} {...props} />
+      )
+
     case 'sql':
       return (
-        <CodeExerciseBeat
+        <SqlExerciseBeat
           intro={beat.intro}
-          language={beat.kind === 'sql' ? 'sql' : beat.language}
+          fixture={beat.fixture}
           exercise={beat.exercise}
           {...props}
         />
@@ -89,6 +95,7 @@ function useGrading(exercise: Exercise, props: BeatProps) {
         exerciseId: exercise.id,
         xp: exercise.xp ?? 25,
         host: host(),
+        sqlEngineFor,
       })
       setResult(graded)
       props.onExerciseGraded(exercise.id, graded)
@@ -261,6 +268,38 @@ function QuizBeat({ exercise, ...props }: BeatProps & { exercise: Exercise }) {
 
       {result && <CheckList checks={result.checks} />}
       {!result && <HintStack hints={exercise.hints} />}
+    </div>
+  )
+}
+
+
+function SqlExerciseBeat({
+  intro,
+  fixture,
+  exercise,
+  ...props
+}: BeatProps & { intro?: string; fixture?: string; exercise: Exercise }) {
+  const [sql, setSql] = useState(exercise.starter ?? '')
+  const { result, grading, submit } = useGrading(exercise, props)
+
+  return (
+    <div>
+      {intro && <Markdown text={intro} />}
+      <p className="mb-3 font-medium text-parchment-100">{exercise.prompt}</p>
+
+      <SqlPlayground value={sql} onChange={setSql} fixture={fixture} />
+
+      <button
+        type="button"
+        onClick={() => void submit(sql)}
+        disabled={grading}
+        className="focus-ring mt-3 rounded-md bg-brass-500 px-3 py-1.5 text-sm font-medium text-ink-950 transition-colors hover:bg-brass-400 disabled:opacity-50"
+      >
+        {grading ? 'Checking…' : 'Check my answer'}
+      </button>
+
+      {result && <CheckList checks={result.checks} />}
+      <HintStack hints={exercise.hints} />
     </div>
   )
 }

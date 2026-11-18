@@ -19,8 +19,8 @@ export interface GradeContext {
   xp: number
   /** Present in the app; absent in unit tests that grade pure submissions. */
   host?: ConductorApi
-  /** Supplied by the SQL playground for sql-* graders. */
-  sql?: unknown
+  /** Resolves a named SQL fixture to a live engine. Required by sql-* graders. */
+  sqlEngineFor?: (fixture: string) => Promise<import('../sql/engine').SqlEngine>
   /** Overrides the default code runner. Used by the harness and by tests. */
   runCode?: (code: string, stdin?: string) => Promise<{ ok: boolean; stdout: string; stderr: string }>
 }
