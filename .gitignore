@@ -1,0 +1,12 @@
+node_modules/
+dist/
+out/
+build/
+release/
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+.vite/
+coverage/
+*.log
