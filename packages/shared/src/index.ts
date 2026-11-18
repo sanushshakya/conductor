@@ -17,4 +17,6 @@ export const CONDUCTOR_TAGLINE = 'Zero to developer, in the age of AI agents.'
 
 export * from './domain'
 export * from './capabilities'
+export * from './progression'
+export * from './content-schema'
 export * from './ipc'
