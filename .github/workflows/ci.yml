@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18.17.0'
+          cache: npm
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm test
+
+      # The harness is the gate that stops unsolvable lessons reaching a
+      # learner: it validates every lesson against the schema and executes
+      # every authored reference solution against its own grader.
+      - name: Content harness
+        run: npm run harness
+
+      - name: Install sidecar dependencies
+        run: |
+          if [ -f services/mentor/requirements.txt ]; then
+            python -m pip install --upgrade pip
+            python -m pip install -r services/mentor/requirements.txt
+          else
+            echo "sidecar not yet present (pre-Phase-4)"
+          fi
+
+      - name: Sidecar tests
+        run: |
+          if [ -d services/mentor/tests ]; then
+            python -m pytest services/mentor -q
+          else
+            echo "sidecar tests not yet present (pre-Phase-4)"
+          fi

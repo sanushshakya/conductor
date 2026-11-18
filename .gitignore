@@ -10,3 +10,6 @@ __pycache__/
 .vite/
 coverage/
 *.log
+.superpowers/
+dist/
+*.tsbuildinfo
