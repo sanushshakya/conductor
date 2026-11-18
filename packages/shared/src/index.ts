@@ -14,3 +14,7 @@ export const CONDUCTOR_NAME = 'Conductor'
 
 /** The one-line promise, used on the first-run screen. */
 export const CONDUCTOR_TAGLINE = 'Zero to developer, in the age of AI agents.'
+
+export * from './domain'
+export * from './capabilities'
+export * from './ipc'
