@@ -3,6 +3,8 @@
   "references": [
     { "path": "./packages/shared" },
     { "path": "./harness" },
-    { "path": "./apps/main" }
+    { "path": "./apps/main" },
+    { "path": "./apps/preload" },
+    { "path": "./apps/renderer" }
   ]
 }

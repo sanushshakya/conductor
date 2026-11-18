@@ -13,3 +13,4 @@ coverage/
 .superpowers/
 dist/
 *.tsbuildinfo
+out/
