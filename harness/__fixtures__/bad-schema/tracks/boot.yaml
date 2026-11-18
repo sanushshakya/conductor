@@ -1,0 +1,18 @@
+track: boot
+title: Boot
+lessons:
+  - id: "0.1"
+    track: boot
+    title: Too few hints
+    estimate_minutes: 5
+    beats:
+      - kind: code
+        language: python
+        exercise:
+          id: x
+          prompt: do it
+          solution: print(1)
+          hints: ["only", "two"]
+          grader:
+            kind: output-match
+            cases: [{ expected: "1" }]

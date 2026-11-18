@@ -1,0 +1,6 @@
+track: boot
+title: Boot
+lessons:
+  - id: "0.1"
+   track: boot
+      title: bad indent

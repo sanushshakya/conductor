@@ -1,0 +1,8 @@
+track: boot
+title: Boot
+lessons:
+  - id: "0.1"
+    track: boot
+    title: Great job on finishing
+    estimate_minutes: 5
+    beats: [{ kind: prose, body: "You did it." }]

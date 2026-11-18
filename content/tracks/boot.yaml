@@ -1,0 +1,95 @@
+track: boot
+title: Boot
+blurb: Make the computer do something. Thirty minutes, no setup, no theory you cannot use yet.
+
+lessons:
+  - id: "0.1"
+    track: boot
+    title: What a program actually is
+    estimate_minutes: 6
+    objectives:
+      - Say what a program is without using the word "code"
+      - Predict the order a computer will do things in
+    beats:
+      - kind: prose
+        body: |
+          A computer is relentlessly obedient and completely literal. It cannot
+          guess, infer, or fill in a gap. That is the whole thing you are
+          learning to work with.
+
+          A **program** is a list of instructions, carried out in order, each one
+          small enough that there is nothing left to interpret. That is it. Not a
+          metaphor — literally a list, done top to bottom.
+
+          Here is one, in English:
+
+              1. take the number 2
+              2. add 3 to it
+              3. show the result
+
+          A person reads that and thinks "5, obviously". A computer does not
+          think "obviously" about anything. It does step 1, then step 2, then
+          step 3, and the answer appears because the steps produced it — not
+          because the computer understood the goal.
+
+      - kind: visual
+        visualizer: instruction-tape
+        caption: Press play. The computer has no idea where it is going until it gets there.
+        config:
+          steps:
+            - label: take the number 2
+              state: { value: 2 }
+            - label: add 3 to it
+              state: { value: 5 }
+            - label: show the result
+              state: { value: 5, output: "5" }
+
+      - kind: prose
+        body: |
+          Notice what the machine never did: it never looked ahead. At step 1 it
+          did not know step 3 wanted a result. It has no plan. **You** are the
+          plan.
+
+          This matters more now than it did ten years ago, not less. An AI agent
+          will write those three steps for you in a second. What it cannot do is
+          know whether the steps you asked for are the steps you needed — and it
+          will sound just as confident either way. Reading the list and seeing
+          that it says `add 3` when you meant `add 30` is the job.
+
+      - kind: quiz
+        exercise:
+          id: boot-order-of-steps
+          prompt: A computer is given these three instructions, in this order.
+          solution: "2"
+          hints:
+            - Instructions run top to bottom. What does the machine know at step 2?
+            - Step 2 can only use what already exists by the time it runs.
+            - At step 2 the box holds 10, because step 3 has not happened yet.
+          grader:
+            kind: quiz
+            question: |
+              1. put 10 in a box
+              2. show what is in the box
+              3. put 99 in the box
+
+              What does the computer show?
+            options:
+              - "99, because that is the final value in the box"
+              - "10, because that is what was in the box when step 2 ran"
+              - "Nothing — the instructions are incomplete"
+              - "Both 10 and 99"
+            correct: [1]
+            explanation: |
+              Step 2 runs before step 3 exists as far as the machine is
+              concerned. It shows 10. The 99 arrives afterwards and nobody looks
+              in the box again.
+
+              This is the single most common bug in generated code: an
+              instruction in the wrong place. The code is valid, it runs, and it
+              is wrong.
+
+      - kind: checkpoint
+        body: |
+          You now know what a program is: an ordered list of literal
+          instructions, with no lookahead and no common sense.
+        unlocks: Next, you write one and run it.

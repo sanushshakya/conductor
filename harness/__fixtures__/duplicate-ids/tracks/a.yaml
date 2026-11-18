@@ -1,0 +1,8 @@
+track: boot
+title: Boot
+lessons:
+  - id: "dup"
+    track: boot
+    title: First
+    estimate_minutes: 5
+    beats: [{ kind: prose, body: one }]

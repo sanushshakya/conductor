@@ -1,0 +1,8 @@
+track: sql
+title: SQL
+lessons:
+  - id: "dup"
+    track: sql
+    title: Second
+    estimate_minutes: 5
+    beats: [{ kind: prose, body: two }]

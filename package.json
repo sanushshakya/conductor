@@ -23,11 +23,13 @@
     "harness": "tsx harness/cli.ts"
   },
   "devDependencies": {
+    "@types/node": "^20.19.43",
     "tsx": "^4.23.15",
     "typescript": "^5.5.4",
     "vitest": "^2.1.9"
   },
   "dependencies": {
+    "yaml": "^2.9.1",
     "zod": "^3.25.76"
   }
 }
