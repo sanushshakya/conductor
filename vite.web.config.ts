@@ -1,6 +1,7 @@
 import { resolve } from 'node:path'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { conductorContent } from './tools/vite-content-plugin'
 
 /**
  * Serves the renderer in a plain browser (`npm run dev:web`).
@@ -13,7 +14,7 @@ import react from '@vitejs/plugin-react'
  */
 export default defineConfig({
   root: resolve(__dirname, 'apps/renderer'),
-  plugins: [react()],
+  plugins: [react(), conductorContent(resolve(__dirname, 'content'))],
   resolve: {
     alias: {
       '@conductor/shared': resolve(__dirname, 'packages/shared/src'),

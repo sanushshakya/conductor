@@ -60,7 +60,7 @@ lessons:
         exercise:
           id: boot-order-of-steps
           prompt: A computer is given these three instructions, in this order.
-          solution: "2"
+          solution: "[1]"
           hints:
             - Instructions run top to bottom. What does the machine know at step 2?
             - Step 2 can only use what already exists by the time it runs.
@@ -93,3 +93,259 @@ lessons:
           You now know what a program is: an ordered list of literal
           instructions, with no lookahead and no common sense.
         unlocks: Next, you write one and run it.
+
+  - id: "0.2"
+    track: boot
+    title: Your first line
+    estimate_minutes: 8
+    objectives:
+      - Write and run a real program
+      - Store something in a variable and use it later
+    beats:
+      - kind: prose
+        body: |
+          Enough theory. The instruction for "show this" in Python is `print`.
+
+              print("anything you like")
+
+          The word `print` is the instruction. The brackets hold what you are
+          giving it. The quote marks mean "this is text, not a command" — without
+          them, Python would think you were naming something.
+
+          Below is a real editor running a real program. Change the text, press
+          **Run**, and watch it happen. Nothing you type here can break anything.
+
+      - kind: code
+        language: python
+        intro: Make the program print exactly this line, including the full stop.
+        exercise:
+          id: boot-first-line
+          prompt: 'Print exactly: I am learning to code.'
+          starter: |
+            print("")
+          solution: |
+            print("I am learning to code.")
+          hints:
+            - The text goes between the quote marks, inside the brackets.
+            - Check the full stop at the end — Python compares text exactly.
+            - 'Write: print("I am learning to code.")'
+          grader:
+            kind: output-match
+            cases:
+              - label: Prints the sentence exactly
+                expected: "I am learning to code."
+
+      - kind: prose
+        body: |
+          You just ran a program. That is the entire loop you will repeat for
+          the rest of your career: write an instruction, run it, look at what
+          came out.
+
+          Now the second idea, and it is the one everything else is built on.
+          A **variable** is a name for a value you want to use more than once:
+
+              city = "Kathmandu"
+              print(city)
+
+          The `=` does not mean "equals" the way it does in maths. It means
+          *put this value in a box and label the box `city`*. Afterwards, writing
+          `city` anywhere means "whatever is in that box right now".
+
+          Why bother, when you could just type the text twice? Because the
+          moment there are two copies of a fact, they can disagree — and the
+          day one gets updated and the other does not is the day you have a bug
+          that takes an afternoon to find.
+
+      - kind: code
+        language: python
+        intro: |
+          Store the name `Ada` in a variable, then use that variable to print
+          `Hello, Ada.` — without typing the finished sentence yourself.
+        exercise:
+          id: boot-first-variable
+          prompt: Use a variable called name to print Hello, Ada.
+          starter: |
+            name = ""
+            print("Hello, ")
+          solution: |
+            name = "Ada"
+            print("Hello, " + name + ".")
+          hints:
+            - Put Ada inside the quote marks on the first line.
+            - You can glue text together with +, like "a" + "b".
+            - 'The last piece is the full stop: print("Hello, " + name + ".")'
+          grader:
+            kind: regex-contains
+            patterns:
+              - 'name\s*=\s*["'']Ada["'']'
+              - 'print\(.*name'
+            forbidden:
+              - 'print\(\s*["'']Hello, Ada\.["'']\s*\)'
+            message: |
+              Two things are needed: the variable must hold "Ada", and your
+              print must use the variable rather than the finished sentence.
+
+      - kind: checkpoint
+        body: |
+          You can make a computer produce output, and you can name a value and
+          reuse it. That is genuinely the foundation.
+        unlocks: Next, something goes wrong — on purpose.
+
+  - id: "0.3"
+    track: boot
+    title: When it breaks
+    estimate_minutes: 9
+    objectives:
+      - Read an error message and find the line it points at
+      - Fix a program you did not write
+    beats:
+      - kind: prose
+        body: |
+          Here is the thing nobody says out loud at the start: **most of
+          programming is things not working.** Not occasionally. Constantly, all
+          day, for everyone, at every level of experience.
+
+          This is not a sign you are bad at it. It is the actual shape of the
+          work. The difference between someone who has done this for ten years
+          and someone on their first day is not that the expert's code works
+          first time — it is that the expert reads the error instead of
+          panicking at it.
+
+          So the error message is not a telling-off. It is the computer being as
+          helpful as it knows how to be: *here is what I was doing, here is the
+          line I was on, here is why I stopped.*
+
+      - kind: code
+        language: python
+        intro: |
+          This program is broken. Run it first — do not fix it yet. Read what
+          comes back, and find the line number it names.
+        exercise:
+          id: boot-read-the-error
+          prompt: |
+            Make this program print: The clinic opens at 9
+          starter: |
+            message = "The clinic opens at "
+            hour = 9
+            print(message + hour)
+          solution: |
+            message = "The clinic opens at "
+            hour = 9
+            print(message + str(hour))
+          hints:
+            - Read the error out loud. It says a str can only be joined to a str. What are you joining?
+            - '`message` is text. `hour` is a number. Python will not guess which one you meant.'
+            - 'Turn the number into text with str(): print(message + str(hour))'
+          grader:
+            kind: output-match
+            cases:
+              - label: Prints the opening time
+                expected: "The clinic opens at 9"
+
+      - kind: prose
+        body: |
+          The error said `TypeError: can only concatenate str to str`. Translated:
+          *you asked me to glue text onto a number, and I will not assume which
+          one you meant.*
+
+          It could have guessed. It deliberately does not, because a guess that
+          is right four times out of five is the worst possible behaviour in a
+          system that handles someone's money or someone's medication.
+
+          `str(hour)` says "treat this number as text". Now both sides are text
+          and the join makes sense.
+
+          Remember this feeling. In Track 4 you will hand a task to an AI agent
+          and get back forty lines that look completely reasonable. The skill you
+          just used — read the error, find the line, work out what it actually
+          says — is the skill that tells you whether those forty lines work.
+
+      - kind: checkpoint
+        body: |
+          You fixed a program you did not write, by reading what the computer
+          told you. That is the loop. That is the whole job.
+        unlocks: Next, you meet the thing that will be writing code alongside you.
+
+  - id: "0.4"
+    track: boot
+    title: Your mentor, and your first duel
+    estimate_minutes: 7
+    objectives:
+      - Know when to ask for a hint and when to sit with it
+      - Find a bug in code that looks correct
+    beats:
+      - kind: prose
+        body: |
+          There is a mentor built into this app. It will not hand you answers,
+          and that is deliberate — being told the answer feels like progress and
+          is not. It works in three steps:
+
+          - **Tier 1** asks you a question back.
+          - **Tier 2** names the idea you are missing.
+          - **Tier 3** shows you the same problem solved somewhere else.
+
+          Use it when you are stuck and have already tried something. Sitting
+          with a problem for two minutes is where the learning happens; sitting
+          with it for forty is just a bad evening.
+
+      - kind: prose
+        body: |
+          Now the part this whole app is built around.
+
+          AI agents write enormous amounts of working code, very fast. They also
+          produce code that is confident, well-formatted, plausible, and wrong —
+          and it looks exactly like the code that works. There is no tell. No
+          hesitation in the wording, no scruffy formatting to warn you.
+
+          So the valuable skill in 2027 is not typing code. It is **reading code
+          and knowing whether to trust it**. Every lesson here ends with you
+          doing precisely that.
+
+          Here is your first one. This function was written by an AI. It was
+          asked for a program that prints the three patients at the front of the
+          queue. It runs without any error at all.
+
+      - kind: quiz
+        exercise:
+          id: boot-first-duel
+          prompt: |
+            The queue is ["Ana", "Ben", "Cal", "Dee"]. This code runs with no
+            error and prints three names. Something is still wrong.
+          solution: "[2]"
+          hints:
+            - It runs, and it prints three names. So the bug is not a crash — it is the wrong three.
+            - Count carefully. Which positions does it actually touch, and which one does it never reach?
+            - Position 0 is the first patient. The code starts at 1.
+          grader:
+            kind: quiz
+            question: |
+              queue = ["Ana", "Ben", "Cal", "Dee"]
+
+              1   print(queue[1])
+              2   print(queue[2])
+              3   print(queue[3])
+
+              It prints Ben, Cal, Dee. What is wrong?
+            options:
+              - "Nothing — it prints three names as asked"
+              - "It should print four names, not three"
+              - "It skips Ana, because counting starts at 0 and the code starts at 1"
+              - "The queue should have been sorted first"
+            correct: [2]
+            explanation: |
+              Positions start at **0**, so `queue[0]` is Ana. The code starts at
+              1, which means the patient at the front of the queue is silently
+              left out — and the program is perfectly happy about it.
+
+              This is an off-by-one error. It is the most common bug in
+              generated code, it never crashes, and in a hospital queue it is
+              the difference between a patient being seen and being forgotten.
+
+              You just did the job. Everything from here is making you faster at
+              it.
+
+      - kind: checkpoint
+        body: |
+          Boot is done. You can write a program, run it, read an error, fix
+          something broken, and spot a bug in code that looks fine.
+        unlocks: Track 1 — the seven things every program does.

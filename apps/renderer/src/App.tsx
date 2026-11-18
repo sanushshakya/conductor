@@ -1,48 +1,66 @@
 import { useEffect, useState } from 'react'
 import {
   CONDUCTOR_NAME,
-  CONDUCTOR_TAGLINE,
-  CONDUCTOR_VERSION,
   capabilities,
   capabilityNotice,
-  type Profile,
   type SidecarStatus,
+  type Track,
 } from '@conductor/shared'
 import { host, isDesktop } from './host'
+import { useProfile } from './store/useProfile'
+import { orderedTracks, lessonById, resumeLesson } from './content'
+import { LessonPlayer } from './lesson/LessonPlayer'
+import { TrackMap } from './components/TrackMap'
+import { XpBar } from './components/XpBar'
+import './visualizers'
+import './grading/graders'
 
 /**
- * The application shell.
- *
- * Phase 2 mounts the lesson player into the main region; what is here now is
- * the frame it lives in, plus the one thing the shell must always be honest
- * about: which parts of the app are currently working.
+ * The application shell: course spine on the left, the current lesson on the
+ * right, and a header that is always honest about what currently works.
  */
 export function App() {
-  const [profile, setProfile] = useState<Profile | null>(null)
   const [sidecar, setSidecar] = useState<SidecarStatus>({ state: 'stopped' })
+  const [lessonId, setLessonId] = useState<string | null>(null)
+  const { profile, loaded, load } = useProfile()
 
   useEffect(() => {
-    const api = host()
-    void api.getProfile().then(setProfile)
-    void api.getSidecarStatus().then(setSidecar)
-    return api.onSidecarStatus(setSidecar)
-  }, [])
+    void load()
+    void host().getSidecarStatus().then(setSidecar)
+    return host().onSidecarStatus(setSidecar)
+  }, [load])
+
+  // Open where they left off, rather than asking them to choose first.
+  useEffect(() => {
+    if (loaded && lessonId === null) {
+      setLessonId(resumeLesson(profile.completedLessons)?.id ?? null)
+    }
+  }, [loaded, lessonId, profile.completedLessons])
 
   const caps = capabilities(sidecar)
   const notice = capabilityNotice(sidecar)
+  const tracks = orderedTracks()
+  const lesson = lessonId ? lessonById(lessonId) : undefined
+
+  /** Tracks whose exercises genuinely cannot be graded right now. */
+  function locked(track: Track): boolean {
+    if (track.track === 'fundamentals' || track.track === 'api') return !caps.pythonExec
+    return false
+  }
 
   return (
     <div className="flex h-full flex-col bg-ink-900">
-      <header className="flex items-center justify-between border-b border-ink-700 bg-ink-850 px-6 py-3">
+      <header className="flex shrink-0 items-center justify-between border-b border-ink-700 bg-ink-850 px-5 py-2.5">
         <div className="flex items-baseline gap-3">
           <span className="font-semibold tracking-tight text-parchment-100">{CONDUCTOR_NAME}</span>
-          <span className="hidden text-sm text-parchment-400 sm:inline">{CONDUCTOR_TAGLINE}</span>
+          <span className="hidden text-xs text-parchment-400 lg:inline">
+            You cannot direct what you cannot read.
+          </span>
         </div>
-        <div className="flex items-center gap-4 text-xs text-parchment-400">
-          <StatusBadge status={sidecar} />
-          <span className="font-mono">
-            v{CONDUCTOR_VERSION}
-            <span className="ml-2 text-parchment-400/60">{isDesktop() ? 'desktop' : 'browser preview'}</span>
+        <div className="flex items-center gap-5">
+          {loaded && <XpBar profile={profile} />}
+          <span className="font-mono text-[10px] text-parchment-400/70">
+            {isDesktop() ? 'desktop' : 'browser preview'}
           </span>
         </div>
       </header>
@@ -50,62 +68,35 @@ export function App() {
       {notice && (
         <div
           role="status"
-          className="border-b border-brass-600/30 bg-brass-600/10 px-6 py-2 text-sm text-brass-400"
+          className="shrink-0 border-b border-brass-600/25 bg-brass-600/10 px-5 py-1.5 text-xs text-brass-400"
         >
           {notice}
         </div>
       )}
 
-      <main className="flex-1 overflow-y-auto px-6 py-10">
-        <div className="mx-auto max-w-prose animate-fade-up">
-          <h1 className="mb-2 text-2xl font-semibold text-parchment-100">Ready when you are.</h1>
-          <p className="mb-8 text-parchment-300">
-            You cannot direct what you cannot read. Every lesson here ends with you catching a
-            mistake an AI made — which is the part of the job that is actually yours.
-          </p>
+      <div className="flex min-h-0 flex-1">
+        <aside className="w-72 shrink-0 overflow-y-auto border-r border-ink-700 bg-ink-850">
+          <TrackMap
+            tracks={tracks}
+            profile={profile}
+            currentLessonId={lessonId}
+            onSelect={setLessonId}
+            locked={locked}
+          />
+        </aside>
 
-          <dl className="grid grid-cols-2 gap-3 text-sm">
-            <Capability label="Boot track" enabled={caps.bootTrack} />
-            <Capability label="SQL lessons" enabled={caps.sqlLessons} />
-            <Capability label="Python exercises" enabled={caps.pythonExec} />
-            <Capability label="API grading" enabled={caps.apiGrading} />
-          </dl>
-
-          {profile && (
-            <p className="mt-8 text-xs text-parchment-400">
-              Level {profile.level} · {profile.xp} XP · {profile.completedLessons.length} lessons done
-            </p>
+        <main className="min-w-0 flex-1 overflow-y-auto">
+          {lesson ? (
+            <LessonPlayer
+              key={lesson.id}
+              lesson={lesson}
+              onFinished={(next) => setLessonId(next ?? lesson.id)}
+            />
+          ) : (
+            <div className="px-8 py-16 text-parchment-400">Loading the course…</div>
           )}
-        </div>
-      </main>
-    </div>
-  )
-}
-
-function StatusBadge({ status }: { status: SidecarStatus }) {
-  const tone =
-    status.state === 'ready'
-      ? 'bg-verify-500/15 text-verify-400 border-verify-600/40'
-      : status.state === 'failed'
-        ? 'bg-wrong-500/15 text-wrong-400 border-wrong-500/40'
-        : 'bg-ink-700 text-parchment-300 border-ink-600'
-
-  return (
-    <span className={`rounded-full border px-2.5 py-1 font-medium ${tone}`}>
-      Python engine: {status.state}
-    </span>
-  )
-}
-
-function Capability({ label, enabled }: { label: string; enabled: boolean }) {
-  return (
-    <div className="flex items-center gap-2 rounded-lg border border-ink-700 bg-ink-850 px-3 py-2">
-      <span
-        aria-hidden
-        className={`h-1.5 w-1.5 rounded-full ${enabled ? 'bg-verify-400' : 'bg-parchment-400/40'}`}
-      />
-      <dt className="text-parchment-200">{label}</dt>
-      <dd className="ml-auto text-xs text-parchment-400">{enabled ? 'ready' : 'paused'}</dd>
+        </main>
+      </div>
     </div>
   )
 }
