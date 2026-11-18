@@ -1,0 +1,823 @@
+track: agents
+title: AI Agents
+blurb: Direct an agent, then verify what it wrote.
+
+lessons:
+  - id: "4.1"
+    track: agents
+    title: What an agent actually is
+    estimate_minutes: 9
+    objectives:
+      - Describe the loop an agent runs
+      - Say what it can and cannot know
+    beats:
+      - kind: prose
+        body: |
+          Strip away the branding and an agent is three things:
+
+          1. A **model** that predicts text.
+          2. A set of **tools** it can call — read a file, write a file, run a
+             command, search.
+          3. A **loop**: look at the goal, pick a tool, use it, look at the
+             result, decide what is next. Repeat until done or stuck.
+
+          That is it. The intelligence is in the model; the usefulness is in
+          the loop. A model alone can only talk about your code. A model with a
+          loop and tools can change it, run it, see the error, and try again —
+          which is why agents can do real work and chatbots mostly cannot.
+
+      - kind: prose
+        body: |
+          What follows from that structure is more useful than any feature list.
+
+          **It only knows what is in its context.** Not your repository — the
+          parts it has read. Not your intent — the words you wrote. Everything
+          else it fills in by prediction, confidently.
+
+          **It cannot tell you how sure it is.** The model produces its best
+          guess with identical fluency whether that guess is grounded in a file
+          it just read or invented wholesale. There is no hesitation in the
+          prose to warn you.
+
+          **It stops when it thinks it is finished.** Which is when the task
+          looks complete, not when it is correct. If your tests do not exist,
+          "it passes" means "nothing contradicted it".
+
+          Those three facts are the entire job description for the human.
+
+      - kind: quiz
+        exercise:
+          id: agents-what-it-knows
+          prompt: |
+            You ask an agent to "fix the bug in the discharge logic". It has
+            read three files, none of which is the one containing the bug.
+          solution: "[1]"
+          hints:
+            - What is in its context, and what is not?
+            - It cannot know that it has not seen the relevant file.
+            - It will produce something confident either way.
+          grader:
+            kind: quiz
+            question: |
+              What is the most likely outcome?
+            options:
+              - "It says it cannot find the bug and asks for the file"
+              - "It changes something plausible in a file it HAS read, and reports the bug fixed"
+              - "It refuses to proceed without more context"
+              - "It reads every file in the repository first"
+            correct: [1]
+            explanation: |
+              It will do something. Producing a confident, plausible change is
+              the behaviour the model was trained into, and it has no way to
+              represent "the thing I need is not here".
+
+              Good agents do ask for context, and good harnesses do search
+              first. But the default failure mode is a confident edit in the
+              wrong place, reported as a fix — and nothing in the output marks
+              it as a guess.
+
+      - kind: checkpoint
+        body: |
+          An agent is a model, some tools, and a loop. It knows only its
+          context, cannot signal uncertainty, and stops when the task looks
+          done.
+        unlocks: Next, how to get one for nothing.
+
+  - id: "4.2"
+    track: agents
+    title: Getting one for nothing
+    estimate_minutes: 10
+    objectives:
+      - Choose a coding agent that costs you nothing
+      - Check a free tier's current terms yourself
+    beats:
+      - kind: prose
+        body: |
+          You do not need to pay for any of this, and you should not start by
+          paying. There are three routes to a working agent at zero cost, and
+          they trade off differently.
+
+          **A local model.** Software like **Ollama** downloads an open-weights
+          model onto your own machine and runs it there. No account, no limits,
+          no network. The models you can run on a laptop are weaker than the
+          large hosted ones, and the download is several gigabytes. For
+          learning, this is the most robust option: it cannot be revoked, and
+          nothing you write leaves your computer.
+
+          **A hosted agent's free tier.** Agentic coding tools — **Antigravity**,
+          **Claude Code**, **Gemini CLI**, and others — generally offer some
+          level of free usage, usually metered per day or per month. You get a
+          much more capable model; you accept a quota and an account.
+
+          **A free API key plus your own loop.** Several providers offer free
+          API tiers. More setup, most control.
+        volatile: true
+        verified_on: "2026-11-18"
+
+      - kind: prose
+        body: |
+          Now the important part, and the reason this lesson is shaped the way
+          it is.
+
+          **Everything above changes.** Free tiers are repriced, renamed,
+          merged and withdrawn, frequently. Any course that tells you "tool X
+          gives you N requests a day" is wrong within months, and following
+          stale instructions is worse than having none — you lose an evening
+          to a signup flow that no longer exists.
+
+          So the durable skill is checking for yourself, and it is three steps:
+
+          1. Go to the tool's **own pricing page**. Not a blog post, not a video,
+             not a course. The vendor's page.
+          2. Find what the free tier actually meters: requests, tokens,
+             messages, hours. Note the reset period.
+          3. Check what happens when you hit the limit — does it stop, queue, or
+             start charging? A free tier that silently becomes a paid one is the
+             thing to watch for, and the answer is in the terms.
+
+          Do that once per tool and you will never be dependent on anyone
+          else's summary, including this one.
+        volatile: true
+        verified_on: "2026-11-18"
+
+      - kind: quiz
+        exercise:
+          id: agents-free-tier-check
+          prompt: |
+            A tutorial from last year says a particular agent is "completely
+            free, unlimited".
+          solution: "[1]"
+          hints:
+            - Where did the claim come from, and when?
+            - Which source can actually be relied on?
+            - One of these answers is a habit that keeps working.
+          grader:
+            kind: quiz
+            question: |
+              What do you do?
+            options:
+              - "Follow it — tutorials are written by people who have used the tool"
+              - "Check the vendor's own pricing page for the current terms before signing up"
+              - "Assume it is now paid and use something else"
+              - "Sign up and find out when the bill arrives"
+            correct: [1]
+            explanation: |
+              The vendor's page is the only source that is current by
+              definition. Everything else is a snapshot of a moment.
+
+              This is a small habit that compounds: the same instinct —
+              go to the primary source, check the date — is what makes you
+              useful when an agent confidently cites an API that changed.
+
+      - kind: checkpoint
+        body: |
+          A local model, a hosted free tier, or a free API key. And the habit
+          of checking the vendor's own page rather than anyone's summary.
+        unlocks: Next, how to ask for something an agent can actually build.
+
+  - id: "4.3"
+    track: agents
+    title: Specs beat prompts
+    estimate_minutes: 11
+    objectives:
+      - Turn a vague request into a brief with testable claims
+      - Predict where an agent will guess
+    beats:
+      - kind: prose
+        body: |
+          Here is the single highest-leverage change you can make to how you
+          work with agents, and it is not a prompting trick.
+
+          Compare these two requests.
+
+              Add a discharge feature to the hospital API.
+
+          versus
+
+              Add POST /patients/{id}/discharge.
+              - Sets discharged_on to today's date.
+              - Ends every prescription for that patient that has no end date.
+              - Both changes in one transaction.
+              - Returns 200 with the updated patient.
+              - Returns 404 if the patient does not exist.
+              - Returns 409 if the patient is already discharged.
+              - Add tests for all three responses.
+
+          The second is not longer because it is more polite. It is longer
+          because **every line is a decision that otherwise gets guessed**.
+
+          Will it update the prescriptions? Guess. Transaction or two
+          statements? Guess. What status for an already-discharged patient?
+          Guess. Tests? Probably not.
+
+          And here is why it matters more than the output quality: **you can
+          check the second one.** Each line is a claim you can verify. The first
+          gives you forty lines and no standard to hold them to, so "is this
+          right?" becomes a matter of reading and hoping.
+
+      - kind: prose
+        body: |
+          A brief an agent can execute has five parts, and you have written all
+          of them before — this is lesson 1.6's function signature, scaled up.
+
+          - **The goal**, in one sentence.
+          - **The interface**: names, inputs, outputs, routes.
+          - **The rules**: what must be true afterwards, including the failures.
+          - **The boundaries**: what it must not change.
+          - **The proof**: what tests must exist and pass.
+
+          The last one is the one people skip and the one that does the work.
+          "Add tests for all three responses" converts the whole brief from a
+          description into something with a pass/fail answer.
+
+      - kind: code
+        language: python
+        intro: |
+          Grade a brief before you send it. These are the same five parts,
+          turned into a checklist you can apply in ten seconds.
+        exercise:
+          id: agents-brief-score
+          prompt: |
+            Write missing_parts(brief) taking a dictionary with boolean keys
+            "goal", "interface", "rules", "boundaries" and "proof". Return a
+            list of the names that are missing or False, in that order.
+          starter: |
+            def missing_parts(brief):
+                return []
+          solution: |
+            def missing_parts(brief):
+                parts = ["goal", "interface", "rules", "boundaries", "proof"]
+                return [part for part in parts if not brief.get(part)]
+          hints:
+            - The order of the result is fixed, so iterate over a list of names rather than the dictionary.
+            - 'A key that is missing and a key set to False are both failures — brief.get(part) covers both.'
+            - A list comprehension does this in one line.
+          grader:
+            kind: python-unit
+            assertions:
+              - 'assert missing_parts({"goal": True, "interface": True, "rules": True, "boundaries": True, "proof": True}) == []'
+              - 'assert missing_parts({}) == ["goal", "interface", "rules", "boundaries", "proof"]'
+              - 'assert missing_parts({"goal": True, "interface": True, "rules": True, "boundaries": True}) == ["proof"]'
+              - 'assert missing_parts({"goal": True, "proof": False}) == ["interface", "rules", "boundaries", "proof"]'
+
+      - kind: checkpoint
+        body: |
+          A brief names the goal, the interface, the rules, the boundaries and
+          the proof. The proof is what makes the rest checkable.
+        unlocks: Next, reading what comes back.
+
+  - id: "4.4"
+    track: agents
+    title: Reading what comes back
+    estimate_minutes: 12
+    objectives:
+      - Review generated code in a fixed order
+      - Find the bug classes agents produce most
+    beats:
+      - kind: prose
+        body: |
+          Forty lines arrive. Reading them top to bottom like prose is the
+          slowest possible approach and the easiest to fool — well-formatted
+          code reads as correct.
+
+          Review in this order instead. It is roughly decreasing bang per
+          second.
+
+          1. **Does it run?** Before anything else. Run it.
+          2. **Does it do the thing on the obvious input?** One real example.
+          3. **The boundaries.** Empty list, zero, one item, missing key, `None`.
+             This is where generated code fails, almost every time, because the
+             examples it learned from were the happy path too.
+          4. **The claims.** Walk your brief line by line. Transaction? Status
+             codes? Tests? Agents routinely satisfy four of five requirements
+             and report success.
+          5. **What else changed.** Check the diff. An agent asked to fix one
+             function will sometimes tidy three others on the way past.
+
+          Only then read it properly.
+
+      - kind: prose
+        body: |
+          The bug classes you have been hunting in duels all track are the ones
+          this review order is tuned for:
+
+          - **Off-by-one** — right count, wrong items. Never crashes.
+          - **Wrong join type** — the rows that are missing are the ones the
+            question was about.
+          - **Missing or too-broad WHERE** — works, affects everything.
+          - **Unhandled empty case** — correct until the list is empty.
+          - **Inverted condition** — perfectly readable, exactly backwards.
+          - **Wrong status code** — handled, miscommunicated.
+          - **Overwriting on partial update** — passes tests, loses data.
+
+          None of them crash. That is not a coincidence: the ones that crash
+          are caught the first time anything runs. What survives to production
+          is the code that works and is wrong.
+
+      - kind: duel
+        duel_id: duel-patch-overwrites
+        intro: |
+          Full speed now. An agent produced this PATCH endpoint and its tests
+          pass.
+
+      - kind: duel
+        duel_id: duel-identity-vs-equality
+        intro: |
+          And one more. Two nearly identical lines; one of them is a bug.
+
+      - kind: checkpoint
+        body: |
+          You have a review order and a list of what to look for. Both work
+          whether a person or an agent wrote the code.
+        unlocks: Next, what to put in front of it.
+
+  - id: "4.5"
+    track: agents
+    title: Context engineering
+    estimate_minutes: 9
+    objectives:
+      - Decide what an agent needs to see
+      - Recognise when to start a fresh session
+    beats:
+      - kind: prose
+        body: |
+          An agent only knows what is in its context, so what you put there is
+          the main lever you have — more than the wording of your request.
+
+          **Include**: the files it must change, the schema or types it must
+          respect, one example of the pattern you want followed, and the exact
+          error if something is failing. Real text, pasted. Not a description
+          of the error.
+
+          **Leave out**: whole directories "for background", long history that
+          has been superseded, and your earlier failed attempts. A superseded
+          instruction does not disappear — it sits there competing with the
+          current one.
+
+          The common failure is not too little context. It is too much of the
+          wrong sort, with the important thing buried in the middle of it.
+
+      - kind: prose
+        body: |
+          Two habits worth building early.
+
+          **Start a fresh session when the task changes.** Context accumulates;
+          an agent that spent twenty turns on a bug in the SQL layer will keep
+          reaching for that when you move to the frontend. A new session is
+          free, and it is usually faster than explaining what to forget.
+
+          **Keep a project brief file.** A short document describing what the
+          project is, the conventions, the commands to run tests, and the
+          things that must not change. Point every session at it. You are
+          writing the onboarding note you would give a new colleague — which is
+          exactly what each fresh session is.
+
+      - kind: quiz
+        exercise:
+          id: agents-context
+          prompt: |
+            You have spent twenty turns with an agent on a failing SQL query.
+            It is fixed. You now want to add a frontend page.
+          solution: "[2]"
+          hints:
+            - What is still sitting in the context from those twenty turns?
+            - Does any of it help with a frontend page?
+            - One option costs nothing and removes all of it.
+          grader:
+            kind: quiz
+            question: |
+              What is the best next move?
+            options:
+              - "Carry on in the same session — it understands the project now"
+              - "Ask it to forget the SQL work, then continue"
+              - "Start a fresh session and point it at your project brief"
+              - "Paste the whole repository in so it has full context"
+            correct: [2]
+            explanation: |
+              Twenty turns of SQL debugging is now noise competing with your
+              new request, and asking a model to "forget" does not remove the
+              text — it adds more.
+
+              A fresh session plus a short brief gives it exactly what the new
+              task needs. The last option is the classic mistake: more context
+              is not better context.
+
+      - kind: checkpoint
+        body: |
+          Context is the lever. Put in what the task needs, leave out what it
+          does not, and start fresh when the task changes.
+        unlocks: Next, the safety net that makes all of this reversible.
+
+  - id: "4.6"
+    track: agents
+    title: Git is your undo button
+    estimate_minutes: 11
+    objectives:
+      - Commit before letting an agent loose
+      - Undo an agent's changes without losing your own
+    beats:
+      - kind: prose
+        body: |
+          An agent can edit twelve files in four seconds. Without version
+          control, you have no way back to the version that worked ten minutes
+          ago — and "it was working before" is not a state you can return to by
+          remembering.
+
+          **Git** records snapshots of your project that you can return to
+          exactly. Five commands cover nearly everything:
+
+              git init                    start tracking this folder
+              git status                  what has changed
+              git add -A                  stage everything
+              git commit -m "message"     save a snapshot
+              git diff                    show me exactly what changed
+
+          The rule that makes agentic work safe is one line long:
+
+          > **Commit before you let an agent change anything.**
+
+          Then whatever happens, `git diff` shows you precisely what it did,
+          and `git restore .` puts everything back.
+
+      - kind: prose
+        body: |
+          Working with agents, in practice:
+
+          - **Commit, then prompt.** A clean tree before every agent run means
+            the diff afterwards is exactly its work, with nothing of yours
+            mixed in.
+          - **Review the diff, not the files.** `git diff` shows what changed.
+            Reading the whole file again hides the three lines that moved.
+          - **Small commits.** "Add discharge endpoint" is a commit you can
+            revert. "Afternoon's work" is not.
+          - **A branch for anything speculative.** `git switch -c try-agent-ui`
+            costs nothing and throws away cleanly.
+
+          None of this is about agents specifically. It is just that agents
+          make large changes fast enough that the cost of not having it arrives
+          much sooner.
+
+      - kind: code
+        language: python
+        intro: |
+          Reading a diff is a skill with a shape. Write the summariser, and the
+          shape becomes explicit.
+        exercise:
+          id: agents-diff-summary
+          prompt: |
+            Write summarise_diff(lines) taking a list of diff lines. Count lines
+            starting with "+" as added and "-" as removed, ignoring the "+++"
+            and "---" file headers. Return a dictionary with "added" and
+            "removed".
+          starter: |
+            def summarise_diff(lines):
+                return {"added": 0, "removed": 0}
+          solution: |
+            def summarise_diff(lines):
+                added = 0
+                removed = 0
+                for line in lines:
+                    if line.startswith("+++") or line.startswith("---"):
+                        continue
+                    if line.startswith("+"):
+                        added += 1
+                    elif line.startswith("-"):
+                        removed += 1
+                return {"added": added, "removed": removed}
+          hints:
+            - The file headers start with three characters, so skip those before counting.
+            - Check for the headers FIRST, otherwise they are counted as ordinary changes.
+            - Everything else starting with a single + or - is a changed line.
+          grader:
+            kind: python-unit
+            preamble: |
+              DIFF = [
+                  "--- a/main.py",
+                  "+++ b/main.py",
+                  "@@ -1,3 +1,4 @@",
+                  " def discharge(patient_id):",
+                  "-    pass",
+                  "+    patient = find(patient_id)",
+                  "+    patient['discharged_on'] = today()",
+                  "+    return patient",
+              ]
+            assertions:
+              - 'assert summarise_diff(DIFF) == {"added": 3, "removed": 1}'
+              - 'assert summarise_diff([]) == {"added": 0, "removed": 0}'
+              - 'assert summarise_diff(["--- a/x", "+++ b/x"]) == {"added": 0, "removed": 0}'
+              - 'assert summarise_diff([" unchanged"]) == {"added": 0, "removed": 0}'
+
+      - kind: checkpoint
+        body: |
+          Commit before you prompt, review the diff rather than the files, and
+          keep the changes small enough to revert.
+        unlocks: Next, you build something real with one.
+
+  - id: "4.7"
+    track: agents
+    title: Build it with an agent
+    estimate_minutes: 50
+    objectives:
+      - Direct an agent through a real feature, end to end
+      - Verify its work against your own brief
+    beats:
+      - kind: prose
+        body: |
+          Time to do it for real, in a real tool, outside this app.
+
+          You are going to give an agent a web page for the Hospital API you
+          built in Track 3 — a page that lists patients and lets you admit one.
+
+          **Conductor cannot grade this.** It cannot see your editor or your
+          files, and pretending otherwise would be the exact dishonesty this
+          course is against. So this lesson is a checklist, and you are the one
+          who ticks it. That is not a weaker standard — every item is
+          something you verify by running it.
+
+          Before you start: your Track 3 API running, a terminal, and an agent
+          from lesson 4.2.
+
+      - kind: checklist
+        intro: |
+          Work down the list. Do not skip the commit at the top — it is what
+          makes the rest safe.
+        items:
+          - id: commit-first
+            text: Your project is in git, and you have committed before starting.
+            why: Without this you cannot see what the agent changed, or undo it.
+          - id: api-running
+            text: Your Hospital API from Track 3 is running, and /docs loads in a browser.
+            why: The agent will build against it. If it is not up, nothing can be tested.
+          - id: brief-written
+            text: You wrote a brief with all five parts before prompting.
+            why: Goal, interface, rules, boundaries, proof. Written down, not in your head.
+          - id: agent-ran
+            text: The agent produced files, and you read the diff rather than the files.
+            why: The diff is what changed. The files are what exists.
+          - id: it-runs
+            text: You opened the page in a browser and it loaded without console errors.
+            why: Step one of the review order. Nothing else matters until this holds.
+          - id: happy-path
+            text: The page lists patients from your real API.
+            why: Real data over real HTTP, not a hardcoded array the agent invented.
+          - id: create-works
+            text: You admitted a patient through the page and it appeared in the list.
+            why: The write path is where the bugs are.
+          - id: empty-case
+            text: You checked what the page does when the API returns an empty list.
+            why: The boundary case generated code gets wrong most often.
+          - id: error-case
+            text: You stopped your API and checked the page says something useful.
+            why: An agent will usually leave this as a silent failure or a blank screen.
+          - id: claims-checked
+            text: You walked your brief line by line against what was built.
+            why: Four of five requirements met and reported as done is the normal outcome.
+          - id: committed
+            text: You committed the result with a message describing the feature.
+            why: Small, revertible commits. "Add patient list page", not "agent stuff".
+
+      - kind: prose
+        body: |
+          Two things to notice about what just happened.
+
+          The agent was fast. Genuinely, unreasonably fast — a page that would
+          have taken you a day in week one took minutes.
+
+          And every single thing on that checklist that failed, you found
+          because you knew what to look for. The empty list, the error state,
+          the requirement it quietly skipped. None of those are things the
+          agent flagged, because it did not know they were wrong.
+
+          That is the job. Not typing. Specifying, then verifying.
+
+      - kind: checkpoint
+        body: |
+          You directed an agent through a real feature and checked its work
+          against your own standard.
+        unlocks: Next, what to do when it does not work.
+
+  - id: "4.8"
+    track: agents
+    title: Debugging what the agent wrote
+    estimate_minutes: 11
+    objectives:
+      - Work from symptom to cause rather than guessing
+      - Avoid the loop where you ask the agent to try again
+    beats:
+      - kind: prose
+        body: |
+          Something is broken, and you did not write it. The tempting move is
+          to paste the error back and say "fix it". Sometimes that works.
+          Often it produces a different, more creative bug, and you lose an
+          hour in a loop where each round is plausible and none converges.
+
+          Work it the way you would any bug you did not write:
+
+          1. **Reproduce it reliably.** If it is intermittent, find the trigger
+             first. Debugging something you cannot summon is guessing.
+          2. **Read the error properly.** Bottom line for what, line above for
+             where, above that for who called it. You did this in lesson 1.7.
+          3. **Find where reality diverges from your expectation.** Print the
+             value just before the failing line. Not what you think it is —
+             what it actually is.
+          4. **Form one hypothesis and test it.** One change. If it does not
+             fix it, undo it before trying the next.
+          5. **Only then ask the agent**, with the specific finding: "this
+             returns None when the list is empty, at line 14" — not "it is
+             broken".
+
+          Step 5 is the point. An agent given a diagnosis is excellent. An
+          agent given a symptom is guessing, exactly as you were.
+
+      - kind: prose
+        body: |
+          Two traps worth naming.
+
+          **The confident rewrite.** Ask an agent to fix something it does not
+          understand and it will frequently rewrite the whole function. The new
+          version may work. It may also discard a special case someone added
+          deliberately three months ago. Check the diff, not the result.
+
+          **The fix that moves the bug.** A change that makes the error go away
+          is not the same as a change that fixes the cause. If you cannot say
+          *why* it works, you have relocated the problem, and it will surface
+          somewhere less convenient.
+
+      - kind: duel
+        duel_id: duel-unhandled-none
+        intro: |
+          One more, under the review order you now have. Run it in your head
+          first, on the input you would actually be given.
+
+      - kind: checkpoint
+        body: |
+          Reproduce, read, locate, hypothesise, then ask — with a diagnosis
+          rather than a symptom.
+        unlocks: Last one — putting it somewhere real.
+
+  - id: "4.9"
+    track: agents
+    title: Shipping it
+    estimate_minutes: 12
+    objectives:
+      - Package an app so it runs somewhere other than your laptop
+      - Know what must change before anything is public
+    beats:
+      - kind: prose
+        body: |
+          "It works on my machine" is where most learning projects stop, and
+          the gap between that and running anywhere else is mostly made of
+          things nobody mentions: which Python version, which packages, which
+          environment variables, which port.
+
+          **Docker** closes that gap by packaging the answers with the code:
+
+              FROM python:3.12-slim
+              WORKDIR /app
+              COPY requirements.txt .
+              RUN pip install --no-cache-dir -r requirements.txt
+              COPY . .
+              CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+          Six lines describing a machine. `docker build` makes an image,
+          `docker run` starts it, and it behaves the same on any computer with
+          Docker — including a server you have never logged into.
+
+          Note `--host 0.0.0.0`. Inside a container, `127.0.0.1` means *inside
+          this container*, so a server bound there is unreachable from outside
+          it. This catches everybody once.
+        volatile: true
+        verified_on: "2026-11-18"
+
+      - kind: prose
+        body: |
+          Running it somewhere other than your laptop has free options —
+          several hosts offer a small free allowance for exactly this, and the
+          same rule from lesson 4.2 applies: check the vendor's own pricing
+          page, today, before you commit to one.
+
+          Before anything is reachable from the internet, four things change,
+          and none of them is optional:
+
+          - **No secrets in the code.** Keys and tokens come from environment
+            variables. A key committed to git is a key that has been published,
+            even after you delete it — git keeps history.
+          - **Authentication on every endpoint that changes data.** Lesson 3.9.
+          - **Turn off debug mode.** Debug error pages print your source and
+            local variables to whoever triggered the error.
+          - **A real database.** SQLite is excellent and is a single file; for
+            anything with concurrent writers, PostgreSQL is the normal answer.
+
+          Nothing here is advanced. It is a checklist, and the only reason it
+          matters is that skipping it is how beginners' first public projects
+          end up as cautionary stories.
+        volatile: true
+        verified_on: "2026-11-18"
+
+      - kind: code
+        language: python
+        intro: |
+          The secrets rule, as code you can run against a settings dictionary.
+        exercise:
+          id: agents-no-secrets
+          prompt: |
+            Write find_hardcoded_secrets(settings) returning the sorted list of
+            keys whose name contains "key", "token", "secret" or "password"
+            (case-insensitive) AND whose value is a non-empty string that does
+            not start with "env:".
+          starter: |
+            def find_hardcoded_secrets(settings):
+                return []
+          solution: |
+            def find_hardcoded_secrets(settings):
+                markers = ("key", "token", "secret", "password")
+                found = []
+                for name, value in settings.items():
+                    lowered = name.lower()
+                    if not any(marker in lowered for marker in markers):
+                        continue
+                    if isinstance(value, str) and value and not value.startswith("env:"):
+                        found.append(name)
+                return sorted(found)
+          hints:
+            - Two conditions have to hold together — a suspicious name AND a literal value.
+            - 'A value starting with "env:" is being read from the environment, which is what you want.'
+            - Sort the result before returning it.
+          grader:
+            kind: python-unit
+            assertions:
+              - 'assert find_hardcoded_secrets({"API_KEY": "sk-live-123"}) == ["API_KEY"]'
+              - 'assert find_hardcoded_secrets({"API_KEY": "env:API_KEY"}) == []'
+              - 'assert find_hardcoded_secrets({"port": 8000, "debug": False}) == []'
+              - 'assert find_hardcoded_secrets({"db_password": "hunter2", "AUTH_TOKEN": "abc"}) == ["AUTH_TOKEN", "db_password"]'
+              - 'assert find_hardcoded_secrets({"API_KEY": ""}) == []'
+              - 'assert find_hardcoded_secrets({}) == []'
+
+      - kind: checkpoint
+        body: |
+          You can package an application so it runs somewhere else, and you
+          know the four things that change before it faces the internet.
+        unlocks: The Hospital Suite, then the career track.
+
+  - id: "4.10"
+    track: agents
+    title: The Hospital Suite checklist
+    estimate_minutes: 10
+    objectives:
+      - Hold your own project to a standard you can check
+    beats:
+      - kind: prose
+        body: |
+          This is the standard for the boss project. Every line is verified by
+          running something — not by it feeling finished.
+
+          Nothing here is marked by the app. That is deliberate: a score
+          Conductor invented for work it cannot see would be worth exactly
+          nothing, and you would know it.
+
+      - kind: checklist
+        intro: |
+          Twelve items. Work down them with the project open.
+        items:
+          - id: suite-db
+            text: Your database has the five normalised tables with foreign keys declared.
+            why: Run your schema and check PRAGMA foreign_key_list on each table.
+          - id: suite-api-runs
+            text: Your API starts and /docs loads.
+            why: If this fails nothing downstream can be trusted.
+          - id: suite-crud
+            text: All four CRUD operations work against real data.
+            why: Create, read, update and delete — each tried by hand at least once.
+          - id: suite-status
+            text: Missing returns 404, invalid returns 422, conflict returns 409.
+            why: Try each deliberately. Guessing is not verifying.
+          - id: suite-auth
+            text: Every endpoint that changes data requires a token.
+            why: Try one WITHOUT the token and confirm it is refused.
+          - id: suite-tests
+            text: You have pytest tests and they pass.
+            why: At minimum the happy path and one failure per endpoint.
+          - id: suite-test-fails
+            text: You broke the code on purpose and watched a test go red.
+            why: A test you never saw fail has not been shown to catch anything.
+          - id: suite-frontend
+            text: An agent built the web interface and it lists real patients.
+            why: Real data over real HTTP, not an array the agent invented.
+          - id: suite-frontend-write
+            text: You can admit a patient through the interface.
+            why: The write path is where the bugs live.
+          - id: suite-edge
+            text: The interface handles an empty list and an unreachable API.
+            why: The two cases generated frontends almost always skip.
+          - id: suite-git
+            text: Everything is in git, with small commits that describe what changed.
+            why: Run git log. If one commit says "stuff", split your work up next time.
+          - id: suite-readme
+            text: A README says what it is, how to run it, and one thing you would do next.
+            why: The last part is what shows you have judgement about your own work.
+
+      - kind: checkpoint
+        body: |
+          You have built a full-stack application, directed an agent through
+          part of it, and verified every layer yourself.
+        unlocks: Track 5 — what to do with this.

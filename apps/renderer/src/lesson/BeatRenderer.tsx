@@ -5,6 +5,7 @@ import { CodeEditor } from '../components/CodeEditor'
 import { HintStack } from '../components/HintStack'
 import { MentorPanel } from '../mentor/MentorPanel'
 import { DuelArena } from '../duel/DuelArena'
+import { ChecklistBeat } from '../components/ChecklistBeat'
 import { duelById } from '../content'
 import { CheckList } from '../components/CheckList'
 import { getVisualizer } from '../visualizers/registry'
@@ -77,6 +78,15 @@ export function BeatRenderer(props: BeatProps) {
 
     case 'quiz':
       return <QuizBeat exercise={beat.exercise} {...props} />
+
+    case 'checklist':
+      return (
+        <ChecklistBeat
+          items={beat.items}
+          intro={beat.intro}
+          onAllChecked={props.onSatisfied}
+        />
+      )
 
     case 'duel': {
       const duel = duelById(beat.duelId)

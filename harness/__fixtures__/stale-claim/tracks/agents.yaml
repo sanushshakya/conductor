@@ -1,0 +1,14 @@
+track: agents
+title: Agents
+lessons:
+  - id: "9.2"
+    track: agents
+    title: A claim that has gone stale
+    estimate_minutes: 5
+    beats:
+      - kind: prose
+        body: This tool has a free tier.
+        volatile: true
+        verified_on: "2025-01-01"
+      - kind: prose
+        body: This claim is not volatile and needs no date.

@@ -280,6 +280,33 @@ const CheckpointBeatSchema = z
   })
   .strict()
 
+/**
+ * A list of things the learner verifies themselves.
+ *
+ * Track 4 has the learner drive a real external agent in a real IDE, which
+ * this app cannot observe and must not pretend to grade. A checklist is the
+ * honest instrument: the learner confirms each gate, and the app takes their
+ * word for it rather than inventing a verdict it has no basis for.
+ */
+const ChecklistBeatSchema = z
+  .object({
+    kind: z.literal('checklist'),
+    intro: z.string().optional(),
+    items: z
+      .array(
+        z
+          .object({
+            id: z.string().min(1),
+            text: z.string().min(1),
+            why: z.string().optional(),
+          })
+          .strict(),
+      )
+      .min(1),
+    ...BeatBase,
+  })
+  .strict()
+
 export const BeatSchema = z
   .discriminatedUnion('kind', [
     ProseBeatSchema,
@@ -289,6 +316,7 @@ export const BeatSchema = z
     QuizBeatSchema,
     DuelBeatSchema,
     CheckpointBeatSchema,
+    ChecklistBeatSchema,
   ])
   .superRefine((beat, ctx) => {
     if (beat.volatile === true && !beat.verifiedOn) {

@@ -1,0 +1,85 @@
+id: hospital-suite
+track: agents
+title: "Boss: The Hospital Suite"
+estimate_minutes: 120
+brief: |
+  Everything you have built, running together, with a front end an agent wrote
+  for you and you verified.
+
+  By the end you will have: a normalised database, an API over it, a web
+  interface, tests that prove the API behaves, and the whole thing in git with
+  a README. That is a portfolio project, and it is a real one — you can
+  demonstrate every layer and explain every decision, which is more than can
+  be said for most things on a junior CV.
+
+  **Conductor does not grade this.** It cannot see your machine, and a score
+  it invented would be worth nothing. What it gives you instead is the
+  standard: a checklist where every line is something you verify by running
+  it. Hold yourself to it honestly and the result is genuinely yours.
+
+  Budget a few evenings. Commit as you go.
+
+criteria:
+  - id: plan
+    label: You wrote the brief before you prompted
+    exercise:
+      id: boss-suite-brief
+      prompt: |
+        Before writing any code, list what the suite must do. Then score your
+        own brief: write a dictionary with the five parts as boolean keys and
+        return the ones still missing.
+      starter: |
+        brief = {
+            "goal": True,
+        }
+
+        def missing_parts(brief):
+            return []
+
+        print(missing_parts(brief))
+      solution: |
+        brief = {
+            "goal": True,
+            "interface": True,
+            "rules": True,
+            "boundaries": True,
+            "proof": True,
+        }
+
+        def missing_parts(brief):
+            parts = ["goal", "interface", "rules", "boundaries", "proof"]
+            return [part for part in parts if not brief.get(part)]
+
+        print(missing_parts(brief))
+      hints:
+        - This is lesson 4.3's checklist. A brief missing the proof is the usual gap.
+        - Fill in the dictionary honestly, then make the function report what is absent.
+        - An empty list means your brief is complete.
+      grader:
+        kind: python-output
+        cases:
+          - label: Your brief has all five parts
+            expected: "[]"
+
+  - id: build
+    label: The suite is built and verified
+    exercise:
+      id: boss-suite-checklist
+      prompt: |
+        Work through the build. Then enter the number of checklist items below
+        that you have genuinely verified by running them — there are 12.
+      starter: |
+        verified = 0
+        print(verified)
+      solution: |
+        verified = 12
+        print(verified)
+      hints:
+        - Every item is checked by running something, not by feeling finished.
+        - If one is not done, go and do it rather than changing the number.
+        - When all twelve genuinely hold, the answer is 12.
+      grader:
+        kind: python-output
+        cases:
+          - label: All twelve verified
+            expected: "12"
