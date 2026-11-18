@@ -9,8 +9,10 @@ import {
 import { host, isDesktop } from './host'
 import { useProfile } from './store/useProfile'
 import { orderedTracks, lessonById, resumeLesson } from './content'
+import { isFirstRun } from '@conductor/shared'
 import { LessonPlayer } from './lesson/LessonPlayer'
 import { TrackMap } from './components/TrackMap'
+import { FirstRun } from './onboarding/FirstRun'
 import { XpBar } from './components/XpBar'
 import './visualizers'
 import '@conductor/core/grading/graders'
@@ -25,6 +27,7 @@ import '@conductor/core/grading/api-graders'
 export function App() {
   const [sidecar, setSidecar] = useState<SidecarStatus>({ state: 'stopped' })
   const [lessonId, setLessonId] = useState<string | null>(null)
+  const [welcomed, setWelcomed] = useState(false)
   const { profile, loaded, load } = useProfile()
 
   useEffect(() => {
@@ -40,6 +43,10 @@ export function App() {
     }
   }, [loaded, lessonId, profile.completedLessons])
 
+  // The welcome screen appears only on a genuinely untouched profile, and it
+  // blocks nothing — Track 0 is already loaded behind it.
+  const showWelcome = loaded && !welcomed && isFirstRun(profile)
+
   const caps = capabilities(sidecar)
   const notice = capabilityNotice(sidecar)
   const tracks = orderedTracks()
@@ -49,6 +56,19 @@ export function App() {
   function locked(track: Track): boolean {
     if (track.track === 'fundamentals' || track.track === 'api') return !caps.pythonExec
     return false
+  }
+
+  if (showWelcome) {
+    return (
+      <div className="h-full bg-ink-900">
+        <FirstRun
+          onStart={() => {
+            setWelcomed(true)
+            setLessonId('0.1')
+          }}
+        />
+      </div>
+    )
   }
 
   return (

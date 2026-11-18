@@ -1,0 +1,52 @@
+appId: dev.conductor.app
+productName: Conductor
+copyright: Conductor
+
+directories:
+  output: release
+  buildResources: build
+
+files:
+  - out/**/*
+  - package.json
+
+# Shipped beside the app rather than bundled into the asar:
+#   content/  is read by the main process and by the sidecar, and keeping it
+#             unpacked means the curriculum can be corrected without a rebuild
+#   mentor/   must be a real directory on disk, because uvicorn imports it
+extraResources:
+  - from: content
+    to: content
+  - from: services/mentor
+    to: mentor
+    filter:
+      - '**/*'
+      - '!.venv'
+      - '!**/__pycache__'
+      - '!tests'
+
+mac:
+  category: public.app-category.developer-tools
+  target:
+    - target: dmg
+      arch: [arm64, x64]
+  darkModeSupport: true
+  # Unsigned by default: signing needs an Apple Developer account, which is a
+  # paid subscription, and this project's premise is that nothing costs money.
+  # `xattr -dr com.apple.quarantine` on first open is the documented workaround.
+  identity: null
+
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+
+linux:
+  target:
+    - target: AppImage
+      arch: [x64]
+  category: Development
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true

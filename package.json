@@ -23,7 +23,8 @@
     "lint": "tsc -b",
     "harness": "tsx harness/cli.ts",
     "dev:web": "vite --config vite.web.config.ts",
-    "build:web": "vite build --config vite.web.config.ts"
+    "build:web": "vite build --config vite.web.config.ts",
+    "package": "npm run build && ./scripts/build-sidecar.sh && electron-builder"
   },
   "devDependencies": {
     "@testing-library/dom": "^10.4.2",
@@ -37,6 +38,7 @@
     "@vitejs/plugin-react": "^4.7.0",
     "autoprefixer": "^10.6.2",
     "electron": "^31.7.7",
+    "electron-builder": "^24.13.3",
     "electron-vite": "^2.3.0",
     "jsdom": "^25.0.1",
     "postcss": "^8.5.33",

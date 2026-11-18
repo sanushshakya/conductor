@@ -167,3 +167,20 @@ export const MentorReplySchema = z.object({
   usedFallback: z.boolean(),
 })
 export type MentorReply = z.infer<typeof MentorReplySchema>
+
+/**
+ * True when nothing has been attempted yet.
+ *
+ * Shared because both processes need the same answer: the main process uses it
+ * to decide whether to defer sidecar provisioning, and the renderer uses it to
+ * decide whether to show the welcome screen. Two implementations would
+ * eventually disagree, and the symptom would be a welcome screen shown to
+ * somebody halfway through the course.
+ */
+export function isFirstRun(profile: Profile): boolean {
+  return (
+    profile.completedLessons.length === 0 &&
+    Object.keys(profile.exerciseResults).length === 0 &&
+    profile.xp === 0
+  )
+}
