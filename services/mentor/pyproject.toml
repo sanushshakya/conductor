@@ -1,0 +1,14 @@
+[project]
+name = "conductor-sidecar"
+version = "0.1.0"
+description = "Conductor's Python sidecar: code execution, hospital API, mentor proxy"
+requires-python = ">=3.12"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+filterwarnings = [
+    "ignore::DeprecationWarning:starlette.*",
+]

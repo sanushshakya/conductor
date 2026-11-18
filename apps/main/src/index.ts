@@ -1,10 +1,13 @@
 import { app, BrowserWindow, ipcMain, shell } from 'electron'
+import { spawn } from 'node:child_process'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { readdirSync, existsSync } from 'node:fs'
-import { CONDUCTOR_NAME } from '@conductor/shared'
+import { CONDUCTOR_NAME, IPC_EVENTS } from '@conductor/shared'
 import { ProfileStore } from './profile-store'
-import { registerHandlers, type SidecarLike } from './ipc-handlers'
+import { registerHandlers } from './ipc-handlers'
+import { SidecarSupervisor, type ChildLike } from './sidecar/supervisor'
+import { findPython, provisionVenv, waitForHealth } from './sidecar/provision'
 
 const here = dirname(fileURLToPath(import.meta.url))
 
@@ -18,23 +21,27 @@ function contentRoot(): string {
   return join(here, '../../../content')
 }
 
-/**
- * A sidecar that is not there yet.
- *
- * Phase 4 replaces this with the real supervisor. Until then the app reports
- * `stopped` honestly, and `capabilities()` turns that into "Boot and SQL work,
- * Python does not" — which is a true statement about the app today, not a
- * placeholder that lies.
- */
-const absentSidecar: SidecarLike = {
-  status: () => ({
-    state: 'stopped',
-    message: 'The Python engine arrives in a later build. Boot and SQL lessons are fully playable.',
-  }),
-  start: async () => absentSidecar.status(),
-  request: async () => {
-    throw new Error('sidecar not installed')
-  },
+/** Where the sidecar's source lives: packaged as a resource, or in the repo. */
+function sidecarRoot(): string {
+  const packaged = join(process.resourcesPath ?? '', 'mentor')
+  return existsSync(packaged) ? packaged : join(here, '../../../services/mentor')
+}
+
+function createSupervisor(userData: string): SidecarSupervisor {
+  const root = sidecarRoot()
+  return new SidecarSupervisor({
+    findPython,
+    provision: (systemPython, onLog) =>
+      provisionVenv(systemPython, join(userData, 'py'), join(root, 'requirements.txt'), onLog),
+    spawn: (command, args, env) =>
+      spawn(command, args, {
+        cwd: root,
+        env: { ...process.env, ...env },
+        stdio: ['ignore', 'pipe', 'pipe'],
+      }) as unknown as ChildLike,
+    fetch: (url, init) => fetch(url, init as RequestInit),
+    waitForHealth: (port) => waitForHealth(port),
+  })
 }
 
 function createWindow(): BrowserWindow {
@@ -75,11 +82,13 @@ function createWindow(): BrowserWindow {
 }
 
 void app.whenReady().then(() => {
-  const store = new ProfileStore(app.getPath('userData'))
+  const userData = app.getPath('userData')
+  const store = new ProfileStore(userData)
+  const sidecar = createSupervisor(userData)
 
   registerHandlers(ipcMain, {
     profileStore: store,
-    sidecar: absentSidecar,
+    sidecar,
     openExternal: async (url) => shell.openExternal(url),
     listContent: async () => {
       const dir = join(contentRoot(), 'tracks')
@@ -87,7 +96,22 @@ void app.whenReady().then(() => {
     },
   })
 
-  createWindow()
+  const window = createWindow()
+
+  // Push status to the renderer so the banner is live rather than polled.
+  sidecar.onStatus((status) => {
+    if (!window.isDestroyed()) window.webContents.send(IPC_EVENTS.sidecarStatusChanged, status)
+  })
+
+  // Deliberately AFTER the window exists: the learner must reach lesson 0.1
+  // immediately, with Python arriving quietly in the background. Provisioning
+  // before the first paint would turn a 15-second first run into a 35-second
+  // one, which is the difference the spec's first goal is about.
+  window.webContents.once('did-finish-load', () => {
+    void sidecar.start()
+  })
+
+  app.on('before-quit', () => void sidecar.stop())
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
