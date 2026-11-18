@@ -1,0 +1,331 @@
+# Agent Duels.
+#
+# Every one of these is code an AI agent would plausibly produce: it runs, it
+# looks reasonable, and it is wrong in exactly one place. The bug classes are
+# chosen because they are the ones generated code actually gets wrong — and
+# because none of them crash, which is what makes them hard to catch and worth
+# practising.
+
+duels:
+  - id: duel-off-by-one
+    lesson_id: "1.5"
+    language: python
+    brief: |
+      You asked for the three patients at the front of the queue. This runs
+      and prints three names.
+    code: |
+      queue = ["Ana", "Ben", "Cal", "Dee"]
+
+      for i in range(1, 4):
+          print(queue[i])
+    bug_line: 3
+    bug_kind: off-by-one
+    explanation: |
+      `range(1, 4)` produces 1, 2, 3 — so the loop starts at position 1 and
+      Ana, at position 0, is never printed.
+
+      Three names come out, which is exactly what was asked for, so nothing
+      looks wrong. In a triage queue it means the person at the front is
+      silently skipped.
+
+      The fix is `range(0, 3)`, or just `range(3)`.
+    fixed_code: |
+      queue = ["Ana", "Ben", "Cal", "Dee"]
+
+      for i in range(3):
+          print(queue[i])
+
+  - id: duel-mutable-default
+    lesson_id: "1.6"
+    language: python
+    brief: |
+      A function that collects patient names. Called twice, it behaves oddly
+      the second time.
+    code: |
+      def add_patient(name, seen=[]):
+          seen.append(name)
+          return seen
+
+      print(add_patient("Ana"))
+      print(add_patient("Ben"))
+    bug_line: 1
+    bug_kind: mutable-default-arg
+    explanation: |
+      The default `[]` is created **once**, when the function is defined — not
+      each time it is called. Both calls share the same list, so the second
+      prints `['Ana', 'Ben']` instead of `['Ben']`.
+
+      This is one of Python's genuinely surprising corners, and it appears in
+      generated code regularly because it reads perfectly naturally.
+
+      The fix is `seen=None`, then build a fresh list inside the function.
+    fixed_code: |
+      def add_patient(name, seen=None):
+          if seen is None:
+              seen = []
+          seen.append(name)
+          return seen
+
+      print(add_patient("Ana"))
+      print(add_patient("Ben"))
+
+  - id: duel-unhandled-none
+    lesson_id: "1.7"
+    language: python
+    brief: |
+      Reports the average wait. It works all day and crashes at six in the
+      morning.
+    code: |
+      def average_wait(patients):
+          total = 0
+          for patient in patients:
+              total = total + patient["waiting_minutes"]
+          return total / len(patients)
+
+      print(average_wait([]))
+    bug_line: 5
+    bug_kind: unhandled-none
+    explanation: |
+      When the waiting room is empty, `len(patients)` is 0 and the division
+      raises `ZeroDivisionError`.
+
+      The loop handles an empty list perfectly — it simply does not run. Only
+      the final line fails, which is why this survives every test written with
+      realistic data and dies on the first quiet morning.
+
+      Guard the empty case before dividing.
+    fixed_code: |
+      def average_wait(patients):
+          if len(patients) == 0:
+              return 0.0
+          total = 0
+          for patient in patients:
+              total = total + patient["waiting_minutes"]
+          return total / len(patients)
+
+      print(average_wait([]))
+
+  - id: duel-identity-vs-equality
+    lesson_id: "1.7"
+    language: python
+    brief: |
+      Checks whether a patient has been discharged. Works for some values and
+      not others.
+    code: |
+      def is_discharged(patient):
+          return patient["discharged_on"] is not None
+
+      def is_first_visit(patient):
+          return patient["visit_count"] is 1
+
+      print(is_first_visit({"visit_count": 1}))
+    bug_line: 5
+    bug_kind: identity-vs-equality
+    explanation: |
+      `is` asks whether two names point at the **same object**; `==` asks
+      whether they have the same **value**.
+
+      For small integers this appears to work, because Python reuses those
+      objects internally. Try it with a visit count of 1000 and it returns
+      `False` — the same code, the same shape, a different answer.
+
+      Use `is` only for `None`, `True` and `False`. Everything else wants `==`.
+
+      Line 2 is correct; line 5 is the bug.
+    fixed_code: |
+      def is_discharged(patient):
+          return patient["discharged_on"] is not None
+
+      def is_first_visit(patient):
+          return patient["visit_count"] == 1
+
+      print(is_first_visit({"visit_count": 1}))
+
+  - id: duel-missing-where
+    lesson_id: "2.5"
+    language: sql
+    brief: |
+      You asked for a statement that discharges patient 7. This is what came
+      back.
+    code: |
+      UPDATE patients
+      SET discharged_on = '2026-11-18'
+      WHERE id > 0;
+    bug_line: 3
+    bug_kind: missing-where
+    explanation: |
+      There is a `WHERE`, which is why this passes a glance — but `id > 0`
+      matches every patient in the hospital.
+
+      The statement runs instantly, reports a large number of rows changed, and
+      cannot be undone. The whole ward is now discharged.
+
+      This is the single most expensive line in the course, and the fact that
+      it has a `WHERE` on it is precisely what makes it dangerous.
+    fixed_code: |
+      UPDATE patients
+      SET discharged_on = '2026-11-18'
+      WHERE id = 7;
+
+  - id: duel-wrong-join-type
+    lesson_id: "2.7"
+    language: sql
+    brief: |
+      You asked for every doctor and how many appointments they have. The
+      report comes back looking fine.
+    code: |
+      SELECT doctors.full_name, count(appointments.id) AS n
+      FROM doctors
+      JOIN appointments ON appointments.doctor_id = doctors.id
+      GROUP BY doctors.id
+      ORDER BY n DESC;
+    bug_line: 3
+    bug_kind: wrong-join-type
+    explanation: |
+      An inner `JOIN` keeps only doctors that matched an appointment, so every
+      doctor with none disappears from the report entirely.
+
+      No error, no empty row, no zero — they are simply absent. And the
+      question "which doctors have no appointments?" is usually the reason
+      someone ran the report in the first place.
+
+      `LEFT JOIN` keeps every doctor and counts 0 for the unmatched.
+    fixed_code: |
+      SELECT doctors.full_name, count(appointments.id) AS n
+      FROM doctors
+      LEFT JOIN appointments ON appointments.doctor_id = doctors.id
+      GROUP BY doctors.id
+      ORDER BY n DESC;
+
+  - id: duel-wrong-status-code
+    lesson_id: "3.8"
+    language: python
+    brief: |
+      An endpoint that fetches one patient. It handles the missing case — just
+      not correctly.
+    code: |
+      @app.get("/patients/{patient_id}")
+      def get_patient(patient_id: int):
+          row = db.find_patient(patient_id)
+          if row is None:
+              raise HTTPException(status_code=500, detail="Patient not found")
+          return row
+    bug_line: 5
+    bug_kind: wrong-status-code
+    explanation: |
+      The missing case is handled, and the message is accurate. The status code
+      is not.
+
+      `500` means *the server broke*. This server did not break — it was asked
+      for something that does not exist, which is the client's mistake. The
+      right code is `404`.
+
+      It matters because status codes are machine-readable: `5xx` tells clients
+      to retry and monitoring to raise an alert. An API that returns 500 for
+      ordinary missing rows generates pages nobody can act on, and the real
+      failures get lost among them.
+    fixed_code: |
+      @app.get("/patients/{patient_id}")
+      def get_patient(patient_id: int):
+          row = db.find_patient(patient_id)
+          if row is None:
+              raise HTTPException(status_code=404, detail="Patient not found")
+          return row
+
+  - id: duel-patch-overwrites
+    lesson_id: "3.7"
+    language: python
+    brief: |
+      A PATCH endpoint for updating a patient. Passes its tests.
+    code: |
+      @app.patch("/patients/{patient_id}")
+      def update_patient(patient_id: int, patch: PatientPatch):
+          fields = patch.model_dump()
+          db.update_patient(patient_id, fields)
+          return db.find_patient(patient_id)
+    bug_line: 3
+    bug_kind: missing-where
+    explanation: |
+      `model_dump()` returns **every** field of the model, including the ones
+      the client never sent — which arrive as `None`.
+
+      So a request that only changes the blood type also writes `None` over the
+      name, the date of birth and the department. The endpoint works perfectly
+      in testing, because tests send complete objects.
+
+      `model_dump(exclude_unset=True)` returns only what was actually sent.
+    fixed_code: |
+      @app.patch("/patients/{patient_id}")
+      def update_patient(patient_id: int, patch: PatientPatch):
+          fields = patch.model_dump(exclude_unset=True)
+          db.update_patient(patient_id, fields)
+          return db.find_patient(patient_id)
+
+  - id: duel-inverted-condition
+    lesson_id: "1.3"
+    language: python
+    brief: |
+      Decides who needs to be seen immediately. Reads perfectly well out loud.
+    code: |
+      def needs_immediate_care(patient):
+          if patient["severity"] < 4:
+              return True
+          return False
+
+      print(needs_immediate_care({"severity": 5}))
+    bug_line: 2
+    bug_kind: inverted-condition
+    explanation: |
+      The comparison is the wrong way round. Severity 5 is the most critical
+      patient, and this returns `False` for them while returning `True` for the
+      sprained ankle.
+
+      It runs, it returns a boolean, the function name is accurate, and the
+      logic is exactly backwards. Nothing about the shape of the code hints at
+      it — you have to know which direction severity runs.
+
+      That domain knowledge is yours, not the agent's.
+    fixed_code: |
+      def needs_immediate_care(patient):
+          if patient["severity"] >= 4:
+              return True
+          return False
+
+      print(needs_immediate_care({"severity": 5}))
+
+  - id: duel-shadowed-variable
+    lesson_id: "1.4"
+    language: python
+    brief: |
+      Totals the waiting times across every department. Returns a number that
+      is far too small.
+    code: |
+      departments = [[50, 20], [5, 35], [10]]
+
+      total = 0
+      for waits in departments:
+          total = 0
+          for minutes in waits:
+              total = total + minutes
+
+      print(total)
+    bug_line: 5
+    bug_kind: shadowed-variable
+    explanation: |
+      `total` is reset to 0 at the start of every department, so the final
+      answer is only the **last** department's total — 10 instead of 120.
+
+      The accumulator has to live outside both loops. Being created inside the
+      outer one means the work of every earlier department is thrown away just
+      before the next begins.
+
+      A plausible number comes out, which is what makes it survive review.
+    fixed_code: |
+      departments = [[50, 20], [5, 35], [10]]
+
+      total = 0
+      for waits in departments:
+          for minutes in waits:
+              total = total + minutes
+
+      print(total)

@@ -60,3 +60,8 @@ test('api-suite exercises are not counted as reference solutions', async () => {
   const withApi = await runAllSolutions('content')
   expect(withApi.ok).toBe(true)
 })
+
+test('a duel whose bugLine points at a blank line is reported', async () => {
+  const report = await runAllSolutions('harness/__fixtures__/blank-bug-line')
+  expect(report.duelFailures.some((f) => /blank line/.test(f.reason))).toBe(true)
+})

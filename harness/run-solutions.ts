@@ -160,6 +160,23 @@ export async function runAllSolutions(contentDir: string): Promise<SolutionRepor
         reason: `bugLine ${duel.bugLine} is outside the code, which is ${lines.length} line(s) long`,
       })
     }
+    // A bugLine pointing at a blank line or a comment is an authoring
+    // off-by-one, and the learner would be hunting for something that is not
+    // there — which is the one experience a duel must never produce.
+    const target = lines[duel.bugLine - 1] ?? ''
+    if (duel.bugLine >= 1 && duel.bugLine <= lines.length && target.trim() === '') {
+      duelFailures.push({
+        duelId: duel.id,
+        reason: `bugLine ${duel.bugLine} points at a blank line`,
+      })
+    }
+    if (target.trim().startsWith('#') || target.trim().startsWith('--')) {
+      duelFailures.push({
+        duelId: duel.id,
+        reason: `bugLine ${duel.bugLine} points at a comment, not code`,
+      })
+    }
+
     if (duel.code.trim() === duel.fixedCode.trim()) {
       duelFailures.push({
         duelId: duel.id,

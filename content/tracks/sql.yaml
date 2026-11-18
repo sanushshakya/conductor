@@ -521,6 +521,11 @@ lessons:
           That refusal is a feature. A patient record that vanishes while their
           appointments still point at it is far worse than an error message.
 
+      - kind: duel
+        duel_id: duel-missing-where
+        intro: |
+          You asked an agent to discharge patient 7. This is what it produced. It has a WHERE clause, so it must be fine.
+
       - kind: checkpoint
         body: |
           You can add, change and remove rows — and you have seen what happens
@@ -739,6 +744,11 @@ lessons:
               FROM doctors
               LEFT JOIN appointments ON appointments.doctor_id = doctors.id
               GROUP BY doctors.id
+
+      - kind: duel
+        duel_id: duel-wrong-join-type
+        intro: |
+          A report that looks completely reasonable. Find the rows it is silently leaving out.
 
       - kind: checkpoint
         body: |

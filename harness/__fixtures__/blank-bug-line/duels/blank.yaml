@@ -1,0 +1,16 @@
+duels:
+  - id: duel-points-at-nothing
+    lesson_id: "0.4"
+    language: python
+    brief: Find the bug.
+    code: |
+      x = 1
+
+      print(x)
+    bug_line: 2
+    bug_kind: off-by-one
+    explanation: The bug line is blank, which is an authoring mistake.
+    fixed_code: |
+      x = 2
+
+      print(x)

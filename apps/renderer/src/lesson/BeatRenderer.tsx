@@ -4,6 +4,8 @@ import { Markdown } from '../components/Markdown'
 import { CodeEditor } from '../components/CodeEditor'
 import { HintStack } from '../components/HintStack'
 import { MentorPanel } from '../mentor/MentorPanel'
+import { DuelArena } from '../duel/DuelArena'
+import { duelById } from '../content'
 import { CheckList } from '../components/CheckList'
 import { getVisualizer } from '../visualizers/registry'
 import { grade } from '@conductor/core'
@@ -76,12 +78,22 @@ export function BeatRenderer(props: BeatProps) {
     case 'quiz':
       return <QuizBeat exercise={beat.exercise} {...props} />
 
-    case 'duel':
+    case 'duel': {
+      const duel = duelById(beat.duelId)
+      if (!duel) {
+        return (
+          <div className="rounded-xl border border-dashed border-ink-600 px-4 py-6 text-center text-sm text-parchment-400">
+            This duel is still being written.
+          </div>
+        )
+      }
       return (
-        <div className="rounded-xl border border-ink-700 bg-ink-850 px-5 py-4 text-sm text-parchment-300">
-          {beat.intro ?? 'A duel waits here.'}
+        <div>
+          {beat.intro && <Markdown text={beat.intro} />}
+          <DuelArena duel={duel} onFinished={() => props.onSatisfied()} />
         </div>
       )
+    }
   }
 }
 

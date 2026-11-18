@@ -594,6 +594,11 @@ lessons:
               - 'assert RECORD == ORIGINAL'
               - 'assert apply_patch(RECORD, {"new_field": 1})["new_field"] == 1'
 
+      - kind: duel
+        duel_id: duel-patch-overwrites
+        intro: |
+          A PATCH endpoint that passes its tests and destroys data in production.
+
       - kind: checkpoint
         body: |
           All four operations, including the two that quietly destroy data when
@@ -676,6 +681,11 @@ lessons:
               - 'assert status_for("conflict") == 409'
               - 'assert status_for("unauthenticated") == 401'
               - 'assert status_for("something nobody planned for") == 500'
+
+      - kind: duel
+        duel_id: duel-wrong-status-code
+        intro: |
+          The missing case is handled. Something about how is still wrong.
 
       - kind: checkpoint
         body: |
