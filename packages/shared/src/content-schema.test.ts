@@ -114,6 +114,15 @@ test('every declared grader kind parses', () => {
     'python-output': { kind: 'python-output', cases: [{ expected: 'hi' }] },
     'python-unit': { kind: 'python-unit', assertions: ['assert triage([]) == []'] },
     'api-suite': { kind: 'api-suite', suite_id: 'hospital-crud' },
+    'html-structure': {
+      kind: 'html-structure',
+      expect: [{ selector: 'h1', label: 'Has a heading', text: 'Ward B' }],
+    },
+    'js-output': { kind: 'js-output', expect_logs: ['Ana'] },
+    'dom-behaviour': {
+      kind: 'dom-behaviour',
+      steps: [{ label: 'Click adds a row', click: '#add', expect_selector: 'li' }],
+    },
   }
   for (const kind of GRADER_KINDS) {
     const parsed = GraderConfigSchema.safeParse(camelizeKeys(samples[kind]))

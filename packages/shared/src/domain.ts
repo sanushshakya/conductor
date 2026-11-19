@@ -8,7 +8,16 @@ import { z } from 'zod'
  * deriving the type from the validator is what keeps the two honest.
  */
 
-export const TRACK_IDS = ['boot', 'fundamentals', 'sql', 'api', 'agents', 'career'] as const
+export const TRACK_IDS = [
+  'boot',
+  'fundamentals',
+  'web',
+  'sql',
+  'api',
+  'frontend',
+  'agents',
+  'career',
+] as const
 export const TrackIdSchema = z.enum(TRACK_IDS)
 export type TrackId = z.infer<typeof TrackIdSchema>
 
@@ -24,23 +33,33 @@ export const TRACK_META: Record<TrackId, { index: number; name: string; blurb: s
     name: 'Fundamentals',
     blurb: 'The seven things every program does.',
   },
-  sql: {
+  web: {
     index: 2,
+    name: 'The Web',
+    blurb: 'Build a page people can see, and make it respond.',
+  },
+  sql: {
+    index: 3,
     name: 'SQL',
     blurb: 'Build a hospital database that survives being switched off.',
   },
   api: {
-    index: 3,
+    index: 4,
     name: 'REST APIs',
     blurb: 'Put your database on the internet, safely.',
   },
+  frontend: {
+    index: 5,
+    name: 'Frontend',
+    blurb: 'React, TypeScript and Tailwind over your own API.',
+  },
   agents: {
-    index: 4,
+    index: 6,
     name: 'AI Agents',
     blurb: 'Direct an agent, then verify what it wrote.',
   },
   career: {
-    index: 5,
+    index: 7,
     name: 'Career',
     blurb: 'The tool atlas, your portfolio, and the next ninety days.',
   },

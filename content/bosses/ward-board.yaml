@@ -1,0 +1,152 @@
+id: ward-board
+track: web
+title: "Boss: The Ward Board"
+estimate_minutes: 45
+brief: |
+  A screen for the wall of a ward: who is waiting, who is urgent, and a way to
+  admit somebody new.
+
+  No new ideas. Structure from 2.1, styling from 2.2, layout from 2.3, the
+  language from 2.4, building from data in 2.5, and responding to a person in
+  2.6.
+
+  This is the first thing you have made that somebody could look at without
+  you explaining it. Keep it — Track 5 rebuilds this exact screen in React, and
+  having both versions is how you will understand what React is actually for.
+
+criteria:
+  - id: structure
+    label: The board has the right shape
+    exercise:
+      id: boss-board-structure
+      prompt: |
+        Build the markup: an <h1> saying "Ward Board", a <ul> with id "board",
+        an <input> with id "name", and a <button> with id "admit" saying "Admit".
+      starter: |
+        <h1></h1>
+      solution: |
+        <h1>Ward Board</h1>
+        <input id="name" placeholder="Patient name">
+        <button id="admit">Admit</button>
+        <ul id="board"></ul>
+      hints:
+        - Four elements, and three of them need an id so your script can find them.
+        - 'The id goes on the element as an attribute: <ul id="board">'
+        - The list starts empty — JavaScript will fill it.
+      grader:
+        kind: html-structure
+        expect:
+          - selector: h1
+            label: There is a heading
+            text: Ward Board
+          - selector: "ul#board"
+            label: There is a board to fill
+          - selector: "input#name"
+            label: There is a field for the patient's name
+          - selector: "button#admit"
+            label: There is an Admit button
+            text: Admit
+
+  - id: render
+    label: Patients are rendered from data
+    web:
+      editors: [html, js]
+      starter_html: |
+        <h1>Ward Board</h1>
+        <ul id="board"></ul>
+    exercise:
+      id: boss-board-render
+      prompt: |
+        Given the patients array, add one <li> to #board for each, showing the
+        name. Patients with severity 4 or higher also get the class "urgent".
+      starter: |
+        const patients = [
+          { name: "Ana Rai", severity: 4 },
+          { name: "Ben Thapa", severity: 2 },
+          { name: "Cal Magar", severity: 5 },
+        ];
+
+        const board = document.querySelector("#board");
+      solution: |
+        const patients = [
+          { name: "Ana Rai", severity: 4 },
+          { name: "Ben Thapa", severity: 2 },
+          { name: "Cal Magar", severity: 5 },
+        ];
+
+        const board = document.querySelector("#board");
+
+        for (const patient of patients) {
+          const item = document.createElement("li");
+          item.textContent = patient.name;
+          if (patient.severity >= 4) {
+            item.classList.add("urgent");
+          }
+          board.appendChild(item);
+        }
+      hints:
+        - Loop the array, and for each one create, fill and attach an element.
+        - Only some of them get the class, so that is a decision inside the loop.
+        - 'classList.add("urgent") adds the class without removing anything else.'
+      grader:
+        kind: html-structure
+        expect:
+          - selector: "#board li"
+            label: All three patients are on the board
+            count: 3
+          - selector: "#board li.urgent"
+            label: The two urgent patients are marked
+            count: 2
+          - selector: "#board li:first-child"
+            label: Order is preserved
+            text: Ana Rai
+
+  - id: admit
+    label: Admitting a patient works
+    web:
+      editors: [html, js]
+      starter_html: |
+        <input id="name"><button id="admit">Admit</button><ul id="board"></ul>
+    exercise:
+      id: boss-board-admit
+      prompt: |
+        Wire the Admit button: clicking it adds an <li> to #board with whatever
+        is in the #name field, then clears the field.
+      starter: |
+        const field = document.querySelector("#name");
+        const button = document.querySelector("#admit");
+        const board = document.querySelector("#board");
+      solution: |
+        const field = document.querySelector("#name");
+        const button = document.querySelector("#admit");
+        const board = document.querySelector("#board");
+
+        button.addEventListener("click", function () {
+          const item = document.createElement("li");
+          item.textContent = field.value;
+          board.appendChild(item);
+          field.value = "";
+        });
+      hints:
+        - 'Hand the function over, do not call it: addEventListener("click", function () { ... })'
+        - Inside, it is create, fill from field.value, attach.
+        - 'Clearing the field afterwards is field.value = ""'
+      grader:
+        kind: dom-behaviour
+        html: |
+          <input id="name"><button id="admit">Admit</button><ul id="board"></ul>
+        steps:
+          - label: Admitting adds the typed name
+            type:
+              selector: "#name"
+              value: Dee Lama
+            click: "#admit"
+            expect_selector: "#board li"
+            expect_text: Dee Lama
+          - label: The field is cleared afterwards
+            type:
+              selector: "#name"
+              value: Dee Lama
+            click: "#admit"
+            expect_selector: "#name"
+            expect_text: ""

@@ -26,7 +26,7 @@ brief: |
   **What it must do**
 
   Use SQLite for storage — `import sqlite3` is in the standard library, and the
-  schema is the one you built in Track 2.
+  schema is the one you built in Track 3.
 
   - `GET /patients` — a list, or an object with an `items` list
   - `POST /patients` — creates one, returns **201** and the created record

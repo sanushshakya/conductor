@@ -3,7 +3,7 @@ title: AI Agents
 blurb: Direct an agent, then verify what it wrote.
 
 lessons:
-  - id: "4.1"
+  - id: "6.1"
     track: agents
     title: What an agent actually is
     estimate_minutes: 9
@@ -83,7 +83,7 @@ lessons:
           done.
         unlocks: Next, how to get one for nothing.
 
-  - id: "4.2"
+  - id: "6.2"
     track: agents
     title: Getting one for nothing
     estimate_minutes: 10
@@ -175,7 +175,7 @@ lessons:
           of checking the vendor's own page rather than anyone's summary.
         unlocks: Next, how to ask for something an agent can actually build.
 
-  - id: "4.3"
+  - id: "6.3"
     track: agents
     title: Specs beat prompts
     estimate_minutes: 11
@@ -266,7 +266,7 @@ lessons:
           the proof. The proof is what makes the rest checkable.
         unlocks: Next, reading what comes back.
 
-  - id: "4.4"
+  - id: "6.4"
     track: agents
     title: Reading what comes back
     estimate_minutes: 12
@@ -331,7 +331,7 @@ lessons:
           whether a person or an agent wrote the code.
         unlocks: Next, what to put in front of it.
 
-  - id: "4.5"
+  - id: "6.5"
     track: agents
     title: Context engineering
     estimate_minutes: 9
@@ -408,7 +408,7 @@ lessons:
           does not, and start fresh when the task changes.
         unlocks: Next, the safety net that makes all of this reversible.
 
-  - id: "4.6"
+  - id: "6.6"
     track: agents
     title: Git is your undo button
     estimate_minutes: 11
@@ -513,7 +513,7 @@ lessons:
           keep the changes small enough to revert.
         unlocks: Next, you build something real with one.
 
-  - id: "4.7"
+  - id: "6.7"
     track: agents
     title: Build it with an agent
     estimate_minutes: 50
@@ -526,7 +526,7 @@ lessons:
           Time to do it for real, in a real tool, outside this app.
 
           You are going to give an agent a web page for the Hospital API you
-          built in Track 3 — a page that lists patients and lets you admit one.
+          built in Track 4 — a page that lists patients and lets you admit one.
 
           **Conductor cannot grade this.** It cannot see your editor or your
           files, and pretending otherwise would be the exact dishonesty this
@@ -534,8 +534,8 @@ lessons:
           who ticks it. That is not a weaker standard — every item is
           something you verify by running it.
 
-          Before you start: your Track 3 API running, a terminal, and an agent
-          from lesson 4.2.
+          Before you start: your Track 4 API running, a terminal, and an agent
+          from lesson 6.2.
 
       - kind: checklist
         intro: |
@@ -546,7 +546,7 @@ lessons:
             text: Your project is in git, and you have committed before starting.
             why: Without this you cannot see what the agent changed, or undo it.
           - id: api-running
-            text: Your Hospital API from Track 3 is running, and /docs loads in a browser.
+            text: Your Hospital API from Track 4 is running, and /docs loads in a browser.
             why: The agent will build against it. If it is not up, nothing can be tested.
           - id: brief-written
             text: You wrote a brief with all five parts before prompting.
@@ -596,7 +596,7 @@ lessons:
           against your own standard.
         unlocks: Next, what to do when it does not work.
 
-  - id: "4.8"
+  - id: "6.8"
     track: agents
     title: Debugging what the agent wrote
     estimate_minutes: 11
@@ -655,7 +655,7 @@ lessons:
           rather than a symptom.
         unlocks: Last one — putting it somewhere real.
 
-  - id: "4.9"
+  - id: "6.9"
     track: agents
     title: Shipping it
     estimate_minutes: 12
@@ -693,7 +693,7 @@ lessons:
         body: |
           Running it somewhere other than your laptop has free options —
           several hosts offer a small free allowance for exactly this, and the
-          same rule from lesson 4.2 applies: check the vendor's own pricing
+          same rule from lesson 6.2 applies: check the vendor's own pricing
           page, today, before you commit to one.
 
           Before anything is reachable from the internet, four things change,
@@ -759,7 +759,7 @@ lessons:
           know the four things that change before it faces the internet.
         unlocks: The Hospital Suite, then the career track.
 
-  - id: "4.10"
+  - id: "6.10"
     track: agents
     title: The Hospital Suite checklist
     estimate_minutes: 10
@@ -820,4 +820,4 @@ lessons:
         body: |
           You have built a full-stack application, directed an agent through
           part of it, and verified every layer yourself.
-        unlocks: Track 5 — what to do with this.
+        unlocks: Track 7 — what to do with this.

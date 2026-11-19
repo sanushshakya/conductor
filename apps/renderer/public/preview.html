@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <!--
+      The sandbox the learner's web code runs in.
+
+      This is a SEPARATE DOCUMENT, loaded into an iframe, and that is the whole
+      trick: Content Security Policy is per-document. The app itself runs under
+      a strict `script-src 'self'`, which would block every inline <script> a
+      learner writes. This page declares its own policy instead, so their code
+      runs — while the iframe that holds it is sandboxed WITHOUT
+      allow-same-origin, giving it an opaque origin with no access to the app,
+      its storage, or its IPC bridge.
+
+      `connect-src 'none'` is deliberate: a lesson never needs the network, and
+      a beginner cannot audit what the code an agent wrote for them reaches out
+      to. Track 2's fetch lesson is served data by the parent instead.
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval'; style-src 'unsafe-inline'; img-src data:; font-src data:; connect-src 'none'; form-action 'none'; base-uri 'none';"
+    />
+    <title>Preview</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+        background: #ffffff;
+        color: #111827;
+        font-family:
+          system-ui,
+          -apple-system,
+          sans-serif;
+      }
+      body {
+        padding: 16px;
+      }
+    </style>
+  </head>
+  <body>
+    <script>
+      // The parent sends {id, html, css, js}; we render it, capture everything
+      // the learner's code says or does, and report back. The parent does the
+      // grading itself on the HTML we return — keeping the assertions in
+      // trusted code rather than running them in here beside the learner's.
+      ;(function () {
+        var MAX_LOGS = 200
+
+        function serialise(value) {
+          if (typeof value === 'string') return value
+          try {
+            return JSON.stringify(value)
+          } catch (error) {
+            return String(value)
+          }
+        }
+
+        function run(request) {
+          var logs = []
+          var errors = []
+
+          function capture(method) {
+            var original = console[method]
+            console[method] = function () {
+              if (logs.length < MAX_LOGS) {
+                logs.push(Array.prototype.map.call(arguments, serialise).join(' '))
+              }
+              try {
+                original.apply(console, arguments)
+              } catch (ignored) {}
+            }
+          }
+          capture('log')
+          capture('info')
+          capture('warn')
+          capture('error')
+
+          window.onerror = function (message, _source, line) {
+            errors.push(line ? message + ' (line ' + line + ')' : String(message))
+            return true
+          }
+
+          // A fresh document each run, so one attempt cannot see the last.
+          document.body.innerHTML = request.html || ''
+
+          if (request.css) {
+            var style = document.createElement('style')
+            style.textContent = request.css
+            document.head.appendChild(style)
+          }
+
+          if (request.js) {
+            try {
+              // Indirect eval runs in global scope, which is what a <script>
+              // tag does — so `const` and function declarations behave the way
+              // the learner expects from a real page.
+              ;(0, eval)(request.js)
+            } catch (error) {
+              errors.push(String((error && error.message) || error))
+            }
+          }
+
+          return { logs: logs, errors: errors }
+        }
+
+        function report(id, payload) {
+          parent.postMessage(
+            {
+              source: 'conductor-preview',
+              id: id,
+              logs: payload.logs,
+              errors: payload.errors,
+              // The rendered result, for the parent to assert against.
+              html: document.body.innerHTML,
+              text: document.body.innerText || '',
+            },
+            '*',
+          )
+        }
+
+        window.addEventListener('message', function (event) {
+          var request = event.data
+          if (!request || request.source !== 'conductor-host') return
+
+          var outcome
+          try {
+            outcome = run(request)
+          } catch (error) {
+            outcome = { logs: [], errors: [String((error && error.message) || error)] }
+          }
+
+          // A microtask gap lets synchronous DOM work settle before we snapshot.
+          setTimeout(function () {
+            report(request.id, outcome)
+          }, request.settleMs || 0)
+        })
+
+        parent.postMessage({ source: 'conductor-preview', ready: true }, '*')
+      })()
+    </script>
+  </body>
+</html>

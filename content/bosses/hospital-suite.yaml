@@ -52,7 +52,7 @@ criteria:
 
         print(missing_parts(brief))
       hints:
-        - This is lesson 4.3's checklist. A brief missing the proof is the usual gap.
+        - This is lesson 6.3's checklist. A brief missing the proof is the usual gap.
         - Fill in the dictionary honestly, then make the function report what is absent.
         - An empty list means your brief is complete.
       grader:

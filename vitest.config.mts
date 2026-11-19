@@ -16,6 +16,10 @@ export default defineConfig({
     globals: true,
     include: ['{packages,apps,harness}/**/*.{test,spec}.{ts,tsx}'],
     exclude: ['**/node_modules/**', '**/dist/**', '**/out/**'],
-    environmentMatchGlobs: [['**/*.tsx', 'jsdom']],
+    environmentMatchGlobs: [
+      ['**/*.tsx', 'jsdom'],
+      // Reads window.location to decide the preview origin.
+      ['**/web/preview-host.test.ts', 'jsdom'],
+    ],
   },
 })

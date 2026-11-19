@@ -1,0 +1,181 @@
+id: hospital-console
+track: frontend
+title: "Boss: The Hospital Console"
+estimate_minutes: 90
+brief: |
+  A React and TypeScript front end, styled with Tailwind, talking to the API
+  you built in Track 4.
+
+  This is the first time every layer is yours: your schema, your API, your
+  interface. When somebody asks what you have built, this is the answer — and
+  you can explain every decision in it, because you made all of them.
+
+  **What it must do**
+
+  - List the patients from your own API at `GET /patients`
+  - Show a loading state while the request is in flight
+  - Show an error state when the API is unreachable — stop your server and check
+  - Show an empty state when there are no patients, not a blank screen
+  - Admit a patient through a form, with the new patient appearing in the list
+  - Mark patients with severity 4 or more visibly differently
+
+  Those last four are the ones that separate a real interface from a demo, and
+  they are exactly the ones generated code leaves out.
+
+  **How this is checked**
+
+  The logic exercises below are graded here. The project itself is a checklist
+  in lesson 5.7 — this app cannot see your editor, and a score it invented for
+  work it cannot observe would be worth nothing.
+
+criteria:
+  - id: shape
+    label: Shaping API data for display
+    web:
+      editors: [js]
+      starter_js: |
+        function toRow(patient) {
+          return { id: patient.id, name: patient.full_name };
+        }
+
+        console.log(JSON.stringify(toRow({ id: 1, full_name: "Ana Rai", severity: 5, discharged_on: null })));
+        console.log(JSON.stringify(toRow({ id: 2, full_name: "Ben Thapa", severity: 2, discharged_on: "2026-11-18" })));
+    exercise:
+      id: boss-console-shape
+      prompt: |
+        Your API returns snake_case. Write toRow(patient) returning
+        { id, name, urgent, onWard } where urgent is severity >= 4 and onWard
+        is true when discharged_on is null.
+      solution: |
+        function toRow(patient) {
+          return {
+            id: patient.id,
+            name: patient.full_name,
+            urgent: patient.severity >= 4,
+            onWard: patient.discharged_on === null,
+          };
+        }
+
+        console.log(JSON.stringify(toRow({ id: 1, full_name: "Ana Rai", severity: 5, discharged_on: null })));
+        console.log(JSON.stringify(toRow({ id: 2, full_name: "Ben Thapa", severity: 2, discharged_on: "2026-11-18" })));
+      hints:
+        - Four keys out, and two of them are booleans you work out from the input.
+        - 'A comparison IS a boolean: patient.severity >= 4 needs no if.'
+        - 'onWard is true when there is no discharge date, so compare to null.'
+      grader:
+        kind: js-output
+        expect_logs:
+          - '{"id":1,"name":"Ana Rai","urgent":true,"onWard":true}'
+          - '{"id":2,"name":"Ben Thapa","urgent":false,"onWard":false}'
+
+  - id: states
+    label: All four view states, in the right order
+    web:
+      editors: [js]
+      starter_js: |
+        function viewState(state) {
+          return "data";
+        }
+
+        console.log(viewState({ loading: true, error: null, rows: [] }));
+        console.log(viewState({ loading: false, error: "offline", rows: [] }));
+        console.log(viewState({ loading: false, error: null, rows: [] }));
+        console.log(viewState({ loading: false, error: null, rows: [{ id: 1 }] }));
+    exercise:
+      id: boss-console-states
+      prompt: |
+        Write viewState(state) returning "loading", "error", "empty" or "data",
+        checked in that order.
+      solution: |
+        function viewState(state) {
+          if (state.loading) {
+            return "loading";
+          }
+          if (state.error) {
+            return "error";
+          }
+          if (state.rows.length === 0) {
+            return "empty";
+          }
+          return "data";
+        }
+
+        console.log(viewState({ loading: true, error: null, rows: [] }));
+        console.log(viewState({ loading: false, error: "offline", rows: [] }));
+        console.log(viewState({ loading: false, error: null, rows: [] }));
+        console.log(viewState({ loading: false, error: null, rows: [{ id: 1 }] }));
+      hints:
+        - Four outcomes, four checks, in the order the prompt gives them.
+        - 'A failed request also has no rows, so error must be checked before empty.'
+        - The final return needs no condition.
+      grader:
+        kind: js-output
+        expect_logs:
+          - loading
+          - error
+          - empty
+          - data
+
+  - id: admit
+    label: Admitting without mutating state
+    web:
+      editors: [js]
+      starter_js: |
+        function admit(rows, row) {
+          rows.push(row);
+          return rows;
+        }
+
+        const before = [{ id: 1, name: "Ana Rai" }];
+        const after = admit(before, { id: 2, name: "Dee Lama" });
+        console.log(before.length);
+        console.log(after.length);
+        console.log(before === after);
+    exercise:
+      id: boss-console-admit
+      prompt: |
+        Write admit(rows, row) returning a NEW array with row appended. The
+        array passed in must not change.
+      solution: |
+        function admit(rows, row) {
+          return [...rows, row];
+        }
+
+        const before = [{ id: 1, name: "Ana Rai" }];
+        const after = admit(before, { id: 2, name: "Dee Lama" });
+        console.log(before.length);
+        console.log(after.length);
+        console.log(before === after);
+      hints:
+        - 'push changes the array React is already holding, so it sees no change.'
+        - Spread the old items into a new array and add the new one.
+        - 'One line: return [...rows, row];'
+      grader:
+        kind: js-output
+        expect_logs:
+          - "1"
+          - "2"
+          - "false"
+
+  - id: build
+    label: The console itself is built and verified
+    exercise:
+      id: boss-console-built
+      prompt: |
+        Work through lesson 5.7's checklist and the six requirements in the
+        brief. Enter how many of the six you have verified by running them.
+      starter: |
+        verified = 0
+        print(verified)
+      solution: |
+        verified = 6
+        print(verified)
+      hints:
+        - Each one is checked by doing it — stop your API and look at the page.
+        - If one is not done, go and do it rather than changing the number.
+        - When all six genuinely hold, the answer is 6.
+      grader:
+        kind: python-output
+        cases:
+          - label: All six requirements verified
+            expected: "6"

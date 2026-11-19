@@ -5,8 +5,10 @@ import { grade } from '@conductor/core'
 import '@conductor/core/grading/graders'
 import '@conductor/core/grading/sql-graders'
 import '@conductor/core/grading/python-graders'
+import '@conductor/core/grading/web-graders'
 import { SqlEngine, setSqlWasmLocator } from '@conductor/core'
 import { createPythonRunner } from './python-runner'
+import { createWebRenderer, createHtmlParser } from './web-renderer'
 import type { Exercise, Lesson } from '@conductor/shared/content-schema'
 import { API_SUITE_IDS } from '@conductor/shared'
 
@@ -47,6 +49,8 @@ setSqlWasmLocator((file) => resolve(process.cwd(), 'node_modules/sql.js/dist', f
 
 const engines = new Map<string, SqlEngine>()
 const runCode = createPythonRunner()
+const renderWeb = createWebRenderer()
+const parseHtml = createHtmlParser()
 
 async function engineFor(contentDir: string, fixture: string): Promise<SqlEngine> {
   const key = `${contentDir}:${fixture}`
@@ -61,6 +65,39 @@ async function engineFor(contentDir: string, fixture: string): Promise<SqlEngine
 
 function exercisesOf(lesson: Lesson): Exercise[] {
   return lesson.beats.flatMap((beat) => ('exercise' in beat && beat.exercise ? [beat.exercise] : []))
+}
+
+/**
+ * Builds the submission a web exercise's reference solution represents.
+ *
+ * A web beat has three editors but one `solution`, so the convention is that
+ * the LAST editor listed is the one the lesson is teaching — and the others
+ * keep their starter content, exactly as the learner would leave them.
+ */
+function webSubmission(beat: {
+  editors?: readonly ('html' | 'css' | 'js')[]
+  starterHtml?: string
+  starterCss?: string
+  starterJs?: string
+  exercise: Exercise
+}): string {
+  const editors = beat.editors ?? ['html', 'css', 'js']
+  const taught = editors[editors.length - 1] ?? 'html'
+  const parts = {
+    html: beat.starterHtml ?? '',
+    css: beat.starterCss ?? '',
+    js: beat.starterJs ?? '',
+  }
+  parts[taught] = beat.exercise.solution
+  return JSON.stringify(parts)
+}
+
+/** The submission that stands in for a solved exercise, per beat kind. */
+function submissionFor(lesson: Lesson, exercise: Exercise): string {
+  for (const beat of lesson.beats) {
+    if (beat.kind === 'web' && beat.exercise.id === exercise.id) return webSubmission(beat)
+  }
+  return exercise.solution
 }
 
 /**
@@ -84,6 +121,8 @@ export async function gradeExercise(contentDir: string, exerciseId: string, subm
     xp: exercise.xp ?? 25,
     sqlEngineFor: (fixture) => engineFor(contentDir, fixture),
     runCode,
+    renderWeb,
+    parseHtml,
   })
 }
 
@@ -93,19 +132,27 @@ export async function runAllSolutions(contentDir: string): Promise<SolutionRepor
   const duelFailures: DuelFailure[] = []
   let total = 0
 
-  const graded: { lessonId: string; exercise: Exercise }[] = []
+  const graded: { lessonId: string; exercise: Exercise; submission: string }[] = []
   for (const track of content.tracks) {
     for (const lesson of track.lessons) {
-      for (const exercise of exercisesOf(lesson)) graded.push({ lessonId: lesson.id, exercise })
+      for (const exercise of exercisesOf(lesson)) {
+        graded.push({ lessonId: lesson.id, exercise, submission: submissionFor(lesson, exercise) })
+      }
     }
   }
   for (const boss of content.bosses) {
     for (const criterion of boss.criteria) {
-      graded.push({ lessonId: boss.id, exercise: criterion.exercise })
+      graded.push({
+        lessonId: boss.id,
+        exercise: criterion.exercise,
+        submission: criterion.web
+          ? webSubmission({ ...criterion.web, exercise: criterion.exercise })
+          : criterion.exercise.solution,
+      })
     }
   }
 
-  for (const { lessonId, exercise } of graded) {
+  for (const { lessonId, exercise, submission } of graded) {
     // An api-suite exercise is satisfied by a server the learner is running,
     // not by a text submission, so there is no reference solution to execute.
     // Its integrity is checked below instead: the suite it names must exist.
@@ -122,11 +169,13 @@ export async function runAllSolutions(contentDir: string): Promise<SolutionRepor
 
     total += 1
     try {
-      const result = await grade(exercise.solution, exercise.grader, {
+      const result = await grade(submission, exercise.grader, {
         exerciseId: exercise.id,
         xp: exercise.xp ?? 25,
         sqlEngineFor: (fixture) => engineFor(contentDir, fixture),
         runCode,
+        renderWeb,
+        parseHtml,
       })
 
       if (!result.passed) {

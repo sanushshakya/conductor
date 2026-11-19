@@ -435,7 +435,7 @@ lessons:
 
           **This is a table.** `patients` is a three-row table with the columns
           `name`, `severity` and `waiting`. You are already doing the thing
-          databases do; Track 2 is about what happens when the table has to
+          databases do; Track 3 is about what happens when the table has to
           outlive your program and hold forty thousand rows.
 
           Remember this shape. It is the hinge the whole course turns on.
@@ -485,7 +485,7 @@ lessons:
       - kind: checkpoint
         body: |
           A list holds many values, a dictionary holds one record, and a list of
-          dictionaries is a table — which is where Track 2 begins.
+          dictionaries is a table — which is where Track 3 begins.
         unlocks: Next, you give a name to a procedure.
 
   - id: "1.6"
@@ -671,7 +671,7 @@ lessons:
 
       - kind: prose
         body: |
-          This is the lesson that pays off most in Track 4.
+          This is the lesson that pays off most in Track 6.
 
           When an agent hands you forty lines, you will not read them like
           prose. You will run them, and something will break, and the traceback
@@ -688,4 +688,4 @@ lessons:
         body: |
           That is all seven. Values, text and numbers, decisions, repetition,
           collections, functions, and failure.
-        unlocks: The Patient Triage Sorter, then Track 2.
+        unlocks: The Patient Triage Sorter, then Track 3.

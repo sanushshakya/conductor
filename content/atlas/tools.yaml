@@ -31,16 +31,18 @@ tools:
   - id: javascript
     name: JavaScript
     category: languages
-    verdict: later
-    why: Unavoidable the moment you build a web interface. Learn it when you need one.
-    verified_on: "2026-11-18"
+    verdict: learn-now
+    why: The only language a browser runs. You already know the ideas from Python.
+    lesson_id: "2.4"
+    verified_on: "2026-11-19"
 
   - id: typescript
     name: TypeScript
     category: languages
-    verdict: later
-    why: JavaScript with types that catch mistakes before they run. Worth it on anything you maintain.
-    verified_on: "2026-11-18"
+    verdict: learn-now
+    why: Types are a specification a machine checks — which matters most when an agent is writing the code.
+    lesson_id: "5.4"
+    verified_on: "2026-11-19"
 
   - id: rust
     name: Rust
@@ -62,7 +64,7 @@ tools:
     category: databases
     verdict: learn-now
     why: A whole database in one file, with no server. What you build on in this course.
-    lesson_id: "2.2"
+    lesson_id: "3.2"
     verified_on: "2026-11-18"
 
   - id: postgres
@@ -100,7 +102,7 @@ tools:
     category: backend
     verdict: learn-now
     why: How you prove code works — including code an agent wrote for you.
-    lesson_id: "3.10"
+    lesson_id: "4.10"
     verified_on: "2026-11-18"
 
   - id: rest
@@ -108,7 +110,7 @@ tools:
     category: backend
     verdict: learn-now
     why: The convention nearly every web API follows. Verbs, resources, status codes.
-    lesson_id: "3.2"
+    lesson_id: "4.2"
     verified_on: "2026-11-18"
 
   - id: django
@@ -126,26 +128,44 @@ tools:
     verified_on: "2026-11-18"
 
   # ── frontend ────────────────────────────────────────────────────────────
+  - id: dom
+    name: The DOM
+    category: frontend
+    verdict: learn-now
+    why: The page as JavaScript sees it. React hides it, and you still need to know it is there.
+    lesson_id: "2.5"
+    verified_on: "2026-11-19"
+
+  - id: vite
+    name: Vite
+    category: frontend
+    verdict: later
+    why: Turns JSX and TypeScript into something a browser runs. One command to start a project.
+    lesson_id: "5.7"
+    verified_on: "2026-11-19"
   - id: html-css
     name: HTML & CSS
     category: frontend
-    verdict: later
-    why: The page itself. Enough to read and adjust what an agent produces is plenty at first.
-    verified_on: "2026-11-18"
+    verdict: learn-now
+    why: What a page IS and what it looks like. Everything on the web sits on these two.
+    track_id: web
+    verified_on: "2026-11-19"
 
   - id: react
     name: React
     category: frontend
-    verdict: later
-    why: The dominant way to build interfaces. Learn it when you have an interface to build.
-    verified_on: "2026-11-18"
+    verdict: learn-now
+    why: Derives the screen from your data, so the two cannot drift apart.
+    lesson_id: "5.3"
+    verified_on: "2026-11-19"
 
   - id: tailwind
     name: Tailwind CSS
     category: frontend
-    verdict: later
-    why: Styling with utility classes. Agents produce it well, which makes it easy to read.
-    verified_on: "2026-11-18"
+    verdict: learn-now
+    why: Utility classes for styling. Agents write it well, which is exactly why you must be able to read it.
+    lesson_id: "5.5"
+    verified_on: "2026-11-19"
 
   - id: nextjs
     name: Next.js
@@ -160,7 +180,7 @@ tools:
     category: ai-agents
     verdict: learn-now
     why: Runs a model on your own machine. No account, no quota, works offline.
-    lesson_id: "4.2"
+    lesson_id: "6.2"
     verified_on: "2026-11-18"
 
   - id: claude-code
@@ -168,7 +188,7 @@ tools:
     category: ai-agents
     verdict: learn-now
     why: An agent that works in your terminal and edits your files directly.
-    lesson_id: "4.2"
+    lesson_id: "6.2"
     verified_on: "2026-11-18"
 
   - id: antigravity
@@ -176,7 +196,7 @@ tools:
     category: ai-agents
     verdict: learn-now
     why: An agent-first editor. Worth trying alongside a terminal agent to feel the difference.
-    lesson_id: "4.2"
+    lesson_id: "6.2"
     verified_on: "2026-11-18"
 
   - id: gemini-cli
@@ -199,7 +219,7 @@ tools:
     category: cloud-deploy
     verdict: learn-now
     why: Packages the answers to "which version, which packages, which port" with your code.
-    lesson_id: "4.9"
+    lesson_id: "6.9"
     verified_on: "2026-11-18"
 
   - id: free-hosting
@@ -229,7 +249,7 @@ tools:
     category: devops
     verdict: learn-now
     why: Your undo button. Non-negotiable the moment an agent can edit twelve files in four seconds.
-    lesson_id: "4.6"
+    lesson_id: "6.6"
     verified_on: "2026-11-18"
 
   - id: github
@@ -237,7 +257,7 @@ tools:
     category: devops
     verdict: learn-now
     why: Where your code lives and where people look at it. Your portfolio, in practice.
-    lesson_id: "5.3"
+    lesson_id: "7.3"
     verified_on: "2026-11-18"
 
   - id: terminal
@@ -245,7 +265,7 @@ tools:
     category: devops
     verdict: learn-now
     why: Six commands cover most of it, and agents live here. Avoiding it costs more than learning it.
-    lesson_id: "3.4"
+    lesson_id: "4.4"
     verified_on: "2026-11-18"
 
   - id: ci

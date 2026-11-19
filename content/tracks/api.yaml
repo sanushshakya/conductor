@@ -3,7 +3,7 @@ title: REST APIs
 blurb: Put your database on the internet, safely.
 
 lessons:
-  - id: "3.1"
+  - id: "4.1"
     track: api
     title: What the internet actually is
     estimate_minutes: 9
@@ -42,7 +42,7 @@ lessons:
           request. Statelessness is why the web scales.
 
           It is also why **every request must carry its own proof of who you
-          are**, which is lesson 3.9, and why the server can never assume the
+          are**, which is lesson 4.9, and why the server can never assume the
           client is telling the truth.
 
       - kind: quiz
@@ -84,7 +84,7 @@ lessons:
           between them.
         unlocks: Next, the mapping that makes REST click.
 
-  - id: "3.2"
+  - id: "4.2"
     track: api
     title: The mapping
     estimate_minutes: 8
@@ -108,7 +108,7 @@ lessons:
           That is REST. An API is a set of **resources** — patients, doctors,
           appointments — and the verb says what you are doing to one.
 
-          So the hospital you built in Track 2 becomes:
+          So the hospital you built in Track 3 becomes:
 
               GET    /patients          every patient         SELECT * FROM patients
               GET    /patients/7        one patient           SELECT ... WHERE id = 7
@@ -171,7 +171,7 @@ lessons:
           rather than the action.
         unlocks: Next, the format the data travels in.
 
-  - id: "3.3"
+  - id: "4.3"
     track: api
     title: JSON
     estimate_minutes: 7
@@ -246,7 +246,7 @@ lessons:
           JSON is a dictionary that can travel. You can read it and write it.
         unlocks: Next, your first endpoint.
 
-  - id: "3.4"
+  - id: "4.4"
     track: api
     title: Your first endpoint
     estimate_minutes: 11
@@ -336,7 +336,7 @@ lessons:
           and path to a function.
         unlocks: Next, the client starts sending you things.
 
-  - id: "3.5"
+  - id: "4.5"
     track: api
     title: Path and query parameters
     estimate_minutes: 9
@@ -423,7 +423,7 @@ lessons:
           see it.
         unlocks: Next, the client sends you a whole record.
 
-  - id: "3.6"
+  - id: "4.6"
     track: api
     title: Request bodies and validation
     estimate_minutes: 11
@@ -516,7 +516,7 @@ lessons:
           only place validation counts.
         unlocks: Next, the other half of CRUD.
 
-  - id: "3.7"
+  - id: "4.7"
     track: api
     title: Completing CRUD
     estimate_minutes: 10
@@ -547,7 +547,7 @@ lessons:
 
       - kind: prose
         body: |
-          Deleting also runs into the constraints from lesson 2.9. A patient
+          Deleting also runs into the constraints from lesson 3.9. A patient
           with appointments cannot simply vanish — the database refuses, and the
           right answer is `409 Conflict`, not a 500.
 
@@ -605,7 +605,7 @@ lessons:
           written carelessly.
         unlocks: Next, saying clearly what happened.
 
-  - id: "3.8"
+  - id: "4.8"
     track: api
     title: Status codes
     estimate_minutes: 8
@@ -692,7 +692,7 @@ lessons:
           Your API can say precisely what happened, and whose fault it was.
         unlocks: Next, who is allowed to ask.
 
-  - id: "3.9"
+  - id: "4.9"
     track: api
     title: Who is asking
     estimate_minutes: 9
@@ -736,7 +736,7 @@ lessons:
           not exist.** The client is a convenience for honest users.
 
           This is a specific thing to look for when an agent builds you a UI in
-          Track 4. Agents are very good at hiding the button.
+          Track 6. Agents are very good at hiding the button.
 
       - kind: code
         language: python
@@ -781,7 +781,7 @@ lessons:
           a hidden button secures nothing.
         unlocks: The last lesson, and the most important one in this course.
 
-  - id: "3.10"
+  - id: "4.10"
     track: api
     title: Testing — how you verify an agent
     estimate_minutes: 12
@@ -793,7 +793,7 @@ lessons:
         body: |
           This is the lesson the whole course has been walking towards.
 
-          In Track 4 an agent will write you an API in ninety seconds. It will
+          In Track 6 an agent will write you an API in ninety seconds. It will
           look right. The names will be sensible, the structure clean, the code
           better formatted than yours. And you will have no idea whether it
           works.
@@ -888,6 +888,6 @@ lessons:
 
       - kind: checkpoint
         body: |
-          Track 3 is done. Your database is reachable, validated, authenticated,
+          Track 4 is done. Your database is reachable, validated, authenticated,
           and — the part that matters — testable.
-        unlocks: The Hospital API boss, then Track 4.
+        unlocks: The Hospital API boss, then Track 6.

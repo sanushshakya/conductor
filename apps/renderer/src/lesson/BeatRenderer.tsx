@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import type { Beat, Exercise, ExerciseResult } from '@conductor/shared'
 import { Markdown } from '../components/Markdown'
 import { CodeEditor } from '../components/CodeEditor'
@@ -6,6 +6,7 @@ import { HintStack } from '../components/HintStack'
 import { MentorPanel } from '../mentor/MentorPanel'
 import { DuelArena } from '../duel/DuelArena'
 import { ChecklistBeat } from '../components/ChecklistBeat'
+import { PreviewFrame, type PreviewHandle } from '../web/PreviewFrame'
 import { duelById } from '../content'
 import { CheckList } from '../components/CheckList'
 import { getVisualizer } from '../visualizers/registry'
@@ -66,6 +67,19 @@ export function BeatRenderer(props: BeatProps) {
     case 'code':
       return (
         <CodeExerciseBeat intro={beat.intro} language={beat.language} exercise={beat.exercise} {...props} />
+      )
+
+    case 'web':
+      return (
+        <WebExerciseBeat
+          intro={beat.intro}
+          editors={beat.editors ?? ['html', 'css', 'js']}
+          starterHtml={beat.starterHtml ?? ''}
+          starterCss={beat.starterCss ?? ''}
+          starterJs={beat.starterJs ?? ''}
+          exercise={beat.exercise}
+          {...props}
+        />
       )
 
     case 'sql':
@@ -129,6 +143,19 @@ export function ExercisePanel({
     return <SqlExerciseBeat exercise={exercise} intro={intro} {...props} />
   }
   if (kind === 'api-suite') return <ApiExerciseBeat exercise={exercise} intro={intro} {...props} />
+  if (kind === 'html-structure' || kind === 'js-output' || kind === 'dom-behaviour') {
+    return (
+      <WebExerciseBeat
+        exercise={exercise}
+        intro={intro}
+        editors={['html', 'css', 'js']}
+        starterHtml={exercise.starter ?? ''}
+        starterCss=""
+        starterJs=""
+        {...props}
+      />
+    )
+  }
   return (
     <CodeExerciseBeat
       exercise={exercise}
@@ -139,7 +166,7 @@ export function ExercisePanel({
   )
 }
 
-function useGrading(exercise: Exercise, props: BeatProps) {
+function useGrading(exercise: Exercise, props: BeatProps, preview?: React.RefObject<PreviewHandle>) {
   const [result, setResult] = useState<ExerciseResult | null>(null)
   const [grading, setGrading] = useState(false)
 
@@ -152,6 +179,9 @@ function useGrading(exercise: Exercise, props: BeatProps) {
         host: host(),
         sqlEngineFor,
         runCode: runLearnerCode,
+        renderWeb: preview?.current
+          ? (request) => preview.current!.render(request)
+          : undefined,
       })
       setResult(graded)
       props.onExerciseGraded(exercise.id, graded)
@@ -463,6 +493,128 @@ function ApiExerciseBeat({
       )}
       {result && <CheckList checks={result.checks} />}
       <HintStack hints={exercise.hints} />
+    </div>
+  )
+}
+
+
+const EDITOR_LABEL = { html: 'HTML', css: 'CSS', js: 'JavaScript' } as const
+
+function WebExerciseBeat({
+  intro,
+  editors,
+  starterHtml,
+  starterCss,
+  starterJs,
+  exercise,
+  ...props
+}: BeatProps & {
+  intro?: string
+  editors: readonly ('html' | 'css' | 'js')[]
+  starterHtml: string
+  starterCss: string
+  starterJs: string
+  exercise: Exercise
+}) {
+  const [html, setHtml] = useState(starterHtml)
+  const [css, setCss] = useState(starterCss)
+  const [js, setJs] = useState(starterJs)
+  const [tab, setTab] = useState<'html' | 'css' | 'js'>(editors[0] ?? 'html')
+  const [consoleLines, setConsoleLines] = useState<string[] | null>(null)
+  const preview = useRef<PreviewHandle>(null)
+  const { result, grading, submit } = useGrading(exercise, props, preview)
+
+  const source = { html, css, js }
+
+  async function run() {
+    const outcome = await preview.current?.render(source)
+    if (!outcome) return
+    setConsoleLines([...outcome.logs, ...outcome.errors.map((e) => `Error: ${e}`)])
+  }
+
+  // The preview reflects what they have typed, so grading and looking at the
+  // page can never disagree about which version was checked.
+  async function check() {
+    await run()
+    await submit(JSON.stringify(source))
+  }
+
+  return (
+    <div>
+      {intro && <Markdown text={intro} />}
+      <p className="mb-3 font-medium text-parchment-100">{exercise.prompt}</p>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div className="min-w-0">
+          {editors.length > 1 && (
+            <div className="mb-2 flex gap-1">
+              {editors.map((name) => (
+                <button
+                  key={name}
+                  type="button"
+                  onClick={() => setTab(name)}
+                  className={`focus-ring rounded-md px-2.5 py-1 font-mono text-xs transition-colors ${
+                    tab === name
+                      ? 'bg-brass-500/15 text-brass-400'
+                      : 'text-parchment-400 hover:text-parchment-200'
+                  }`}
+                >
+                  {EDITOR_LABEL[name]}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {tab === 'html' && (
+            <CodeEditor value={html} onChange={setHtml} minLines={8} ariaLabel="HTML editor" />
+          )}
+          {tab === 'css' && (
+            <CodeEditor value={css} onChange={setCss} minLines={8} ariaLabel="CSS editor" />
+          )}
+          {tab === 'js' && (
+            <CodeEditor value={js} onChange={setJs} minLines={8} ariaLabel="JavaScript editor" />
+          )}
+
+          <div className="mt-3 flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => void run()}
+              className="focus-ring rounded-md border border-ink-600 px-3 py-1.5 text-sm text-parchment-200 transition-colors hover:border-parchment-400"
+            >
+              Run
+            </button>
+            <button
+              type="button"
+              onClick={() => void check()}
+              disabled={grading}
+              className="focus-ring rounded-md bg-brass-500 px-3 py-1.5 text-sm font-medium text-ink-950 transition-colors hover:bg-brass-400 disabled:opacity-50"
+            >
+              {grading ? 'Checking…' : 'Check my answer'}
+            </button>
+          </div>
+        </div>
+
+        <PreviewFrame ref={preview} className="min-w-0" />
+      </div>
+
+      {consoleLines && consoleLines.length > 0 && (
+        <div className="mt-3">
+          <div className="mb-1 text-xs uppercase tracking-wide text-parchment-400">Console</div>
+          <pre className="overflow-x-auto rounded-lg border border-ink-700 bg-ink-950 px-4 py-3 font-mono text-sm text-parchment-200">
+            {consoleLines.join('\n')}
+          </pre>
+        </div>
+      )}
+
+      <UnavailableNotice result={result} />
+      {result && <CheckList checks={result.checks} />}
+      <HintStack hints={exercise.hints} />
+      <MentorPanel
+        authoredHints={exercise.hints}
+        learnerCode={[html, css, js].filter(Boolean).join('\n\n')}
+        lessonId={props.lessonId}
+        solution={exercise.solution}
+      />
     </div>
   )
 }

@@ -1,0 +1,776 @@
+track: web
+title: The Web
+blurb: Build a page people can see, and make it respond.
+
+lessons:
+  - id: "2.1"
+    track: web
+    title: What a web page actually is
+    estimate_minutes: 9
+    objectives:
+      - Describe a page as a tree of elements
+      - Write HTML that says what things are, not how they look
+    beats:
+      - kind: prose
+        body: |
+          Everything you have built so far runs in a terminal and prints text.
+          That is where the real work happens — but it is not what anybody
+          sees.
+
+          A web page is three things, kept deliberately separate:
+
+          - **HTML** — what the content *is*. A heading, a list, a button.
+          - **CSS** — what it *looks like*. Colour, spacing, layout.
+          - **JavaScript** — what it *does* when somebody interacts with it.
+
+          That separation is the whole design of the web, and it is why a
+          single page can be restyled completely without touching its content,
+          or read aloud by a screen reader that ignores the styling entirely.
+
+      - kind: prose
+        body: |
+          HTML is a **tree**. An element opens, may contain others, and closes:
+
+              <article>
+                <h1>Ward B</h1>
+                <ul>
+                  <li>Ana Rai</li>
+                  <li>Ben Thapa</li>
+                </ul>
+              </article>
+
+          `<article>` contains `<h1>` and `<ul>`; `<ul>` contains two `<li>`.
+          Exactly the shape of the nested data you have been writing in Python
+          — a list of things, inside a container, with a label.
+
+          The tag you choose is a **meaning**, not a style. `<h1>` means "this
+          is the main heading", not "make this big". Use `<ul>` for a list,
+          `<button>` for something clickable, `<p>` for a paragraph. Get that
+          right and screen readers, search engines and keyboard users all work
+          for free; get it wrong and you spend the rest of the project fighting
+          it back.
+
+      - kind: web
+        editors: [html]
+        intro: |
+          The editor is on the left, your real page on the right. Press **Run**
+          to see it, then **Check my answer** when it looks right.
+        starter_html: |
+          <h1></h1>
+        exercise:
+          id: web-first-page
+          prompt: |
+            Make a page with the heading "Ward B" and a list of two patients:
+            "Ana Rai" and "Ben Thapa".
+          solution: |
+            <h1>Ward B</h1>
+            <ul>
+              <li>Ana Rai</li>
+              <li>Ben Thapa</li>
+            </ul>
+          hints:
+            - The heading goes between the opening and closing h1 tags.
+            - 'A list is a <ul> containing one <li> for each item.'
+            - 'Two patients means two <li> elements inside one <ul>.'
+          grader:
+            kind: html-structure
+            expect:
+              - selector: h1
+                label: There is a main heading saying Ward B
+                text: Ward B
+              - selector: ul li
+                label: Two patients are listed
+                count: 2
+              - selector: "ul li:first-child"
+                label: The first patient is Ana Rai
+                text: Ana Rai
+
+      - kind: prose
+        body: |
+          Two more things and you have enough HTML to be useful.
+
+          **Attributes** carry extra information on an element:
+
+              <img src="ward.png" alt="Ward B at night">
+              <a href="https://example.com">A link</a>
+              <li class="urgent">Cal Magar</li>
+
+          `alt` is not optional decoration — it is what a blind user hears
+          instead of the image. An image with no `alt` is a hole in the page
+          for them.
+
+          **`class`** is a label you invent, so CSS and JavaScript can find
+          that element later. It is the hook everything else hangs on.
+
+      - kind: checkpoint
+        body: |
+          A page is a tree of elements, each tag means something, and classes
+          are how you point at the ones you care about.
+        unlocks: Next, making it look like something.
+
+  - id: "2.2"
+    track: web
+    title: Making it look like something
+    estimate_minutes: 11
+    objectives:
+      - Select elements and style them
+      - Explain the box model without guessing
+    beats:
+      - kind: prose
+        body: |
+          CSS is a list of rules. Each rule picks some elements and sets some
+          properties:
+
+              h1 {
+                color: #b91c1c;
+                font-size: 28px;
+              }
+
+          The part before the brace is the **selector**. The three you will use
+          constantly:
+
+              h1          every h1 element
+              .urgent     every element with class="urgent"
+              #board      the element with id="board"
+
+          Classes are for groups, ids are for one specific thing. When in
+          doubt, use a class — an id you later need twice is a rewrite.
+
+      - kind: prose
+        body: |
+          Now the thing that trips everybody up, because it is invisible until
+          you know it is there.
+
+          Every element is a **box**, with four layers from the inside out:
+
+              content   the text itself
+              padding   space INSIDE the box, between content and border
+              border    the line around it
+              margin    space OUTSIDE the box, pushing others away
+
+          Padding grows the box; margin pushes neighbours away from it. The
+          classic confusion — "why is there a gap I cannot get rid of" — is
+          almost always a margin, and "why is the background bigger than the
+          text" is almost always padding.
+
+          One more: `box-sizing: border-box` makes `width` mean the whole box
+          including padding and border, rather than just the content. Nearly
+          every real project sets it on everything, because the other behaviour
+          surprises people forever.
+
+      - kind: web
+        editors: [html, css]
+        intro: |
+          The HTML is written for you. Style it.
+        starter_html: |
+          <h1>Ward B</h1>
+          <ul id="board">
+            <li class="urgent">Cal Magar</li>
+            <li>Ana Rai</li>
+            <li>Ben Thapa</li>
+          </ul>
+        starter_css: |
+          h1 {
+          }
+        exercise:
+          id: web-css-basics
+          prompt: |
+            Give the h1 the colour #b91c1c, and give every element with class
+            "urgent" a background of #fee2e2 and 8px of padding.
+          solution: |
+            h1 {
+              color: #b91c1c;
+            }
+
+            .urgent {
+              background: #fee2e2;
+              padding: 8px;
+            }
+          hints:
+            - 'A class selector starts with a dot: .urgent'
+            - Each property is name, colon, value, semicolon.
+            - 'You need two rules — one for h1, one for .urgent.'
+          grader:
+            kind: html-structure
+            expect:
+              - selector: h1
+                label: The heading is still there
+                text: Ward B
+              - selector: .urgent
+                label: The urgent patient is still marked
+                text: Cal Magar
+            forbid:
+              - selector: "[style]"
+                label: Styling lives in CSS, not in a style attribute
+
+      - kind: prose
+        body: |
+          A note on where styles go, because you will see all three.
+
+          - **In a stylesheet** — a separate `.css` file. This is what real
+            projects do.
+          - **In a `<style>` tag** — fine for one page, which is what this
+            editor does for you.
+          - **In a `style="..."` attribute on the element** — avoid. It cannot
+            be reused, it overrides everything, and it is the first thing you
+            have to undo when the design changes.
+
+          That last one is worth flagging now because **agents produce it
+          constantly**. Ask for a styled component and you will frequently get
+          inline styles everywhere — it works, it renders, and it is a
+          maintenance problem you will meet in a month.
+
+      - kind: checkpoint
+        body: |
+          You can select elements and style them, and you know what padding,
+          border and margin each do.
+        unlocks: Next, getting things to sit where you want.
+
+  - id: "2.3"
+    track: web
+    title: Layout without the fight
+    estimate_minutes: 10
+    objectives:
+      - Arrange elements in a row or a column with flexbox
+      - Say which axis a flex property affects
+    beats:
+      - kind: prose
+        body: |
+          Layout used to be genuinely painful. It is not any more, and the
+          reason is **flexbox**.
+
+          Put `display: flex` on a container and its children become a row:
+
+              .toolbar {
+                display: flex;
+                gap: 12px;
+                align-items: center;
+              }
+
+          Four properties cover most of what you need:
+
+              flex-direction   row (default) or column
+              gap              space between children
+              justify-content  position along the MAIN axis
+              align-items      position along the CROSS axis
+
+          The axes are the part to get straight. With `flex-direction: row`,
+          the main axis runs across and the cross axis runs down — so
+          `justify-content` moves things left and right, and `align-items`
+          moves them up and down. Switch to `column` and the two swap over.
+          Almost every "why did that not work" in flexbox is this.
+
+          `justify-content: space-between` pushes the first child left and the
+          last right, which is how nearly every header on the web is built.
+
+      - kind: web
+        editors: [html, css]
+        intro: |
+          A ward header: the title on the left, the count on the right.
+        starter_html: |
+          <header class="bar">
+            <h1>Ward B</h1>
+            <span class="count">3 patients</span>
+          </header>
+        starter_css: |
+          .bar {
+          }
+        exercise:
+          id: web-flexbox
+          prompt: |
+            Make .bar a flex container that puts the heading and the count at
+            opposite ends, vertically centred.
+          solution: |
+            .bar {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+            }
+          hints:
+            - A container only becomes flexible when you tell it to.
+            - Opposite ends along the row is the main axis, so that is justify-content.
+            - 'Vertically centred in a row is the cross axis: align-items: center.'
+          grader:
+            kind: html-structure
+            expect:
+              - selector: .bar h1
+                label: The heading is inside the bar
+                text: Ward B
+              - selector: .bar .count
+                label: The count is inside the bar
+                textContains: "3 patients"
+
+      - kind: prose
+        body: |
+          When you need two dimensions at once — a real grid of cards, rows and
+          columns together — that is **CSS Grid**, and it is worth learning
+          when you meet that problem. Flexbox handles one direction at a time
+          and covers the large majority of layouts.
+
+          One habit worth starting now: build it narrow first. A layout that
+          works on a phone usually widens to a desktop without complaint; one
+          built wide first almost never narrows gracefully.
+
+      - kind: checkpoint
+        body: |
+          You can lay things out in a row or a column, and you know which
+          property moves things along which axis.
+        unlocks: Next, a second programming language — which you already know.
+
+  - id: "2.4"
+    track: web
+    title: JavaScript is Python with different punctuation
+    estimate_minutes: 12
+    objectives:
+      - Write the seven fundamentals in a second language
+      - Recognise what transfers between languages and what does not
+    beats:
+      - kind: prose
+        body: |
+          Here is something nobody tells beginners, and it changes everything:
+          **the second language is enormously easier than the first.**
+
+          You spent Track 1 learning what a variable is, what a loop does, why
+          a function has a name. None of that has to be learned again. What is
+          left is punctuation.
+
+              Python                      JavaScript
+              ─────────────────────────────────────────────────
+              name = "Ana"                let name = "Ana"
+              print(name)                 console.log(name)
+
+              if severity >= 4:           if (severity >= 4) {
+                  care()                    care()
+                                          }
+
+              for p in patients:          for (const p of patients) {
+                  print(p)                  console.log(p)
+                                          }
+
+              def label(s):               function label(s) {
+                  return "Urgent"           return "Urgent"
+                                          }
+
+              {"name": "Ana"}             { name: "Ana" }
+              [1, 2, 3]                   [1, 2, 3]
+
+          Braces instead of indentation. Parentheses around conditions.
+          `console.log` instead of `print`. `let` and `const` instead of a bare
+          name. That is most of it.
+
+      - kind: prose
+        body: |
+          Four differences that are real, not cosmetic:
+
+          - **`const` and `let`.** `const` means the name will not be pointed
+            at something else. Use it by default; use `let` only when you
+            genuinely reassign. There is no reason to use the older `var`.
+          - **Semicolons** end statements. JavaScript will usually insert them
+            for you, and the places it guesses wrong are nasty, so write them.
+          - **`===`, not `==`.** The double-equals version converts types
+            before comparing, so `"1" == 1` is true — almost never what you
+            meant. Always use `===`.
+          - **Functions are values.** You can pass a function to another
+            function as an argument. Python can do this too; JavaScript does it
+            constantly, and lesson 2.6 depends on it.
+
+      - kind: web
+        editors: [js]
+        intro: |
+          The same triage logic from Track 1, in the other language. Anything
+          you `console.log` appears below.
+        starter_js: |
+          const patients = [
+            { name: "Ana", severity: 4 },
+            { name: "Ben", severity: 2 },
+            { name: "Cal", severity: 5 },
+          ];
+
+          console.log(patients.length);
+        exercise:
+          id: web-js-basics
+          prompt: |
+            Print the name of every patient whose severity is 4 or higher, one
+            per line, in the order they appear.
+          solution: |
+            const patients = [
+              { name: "Ana", severity: 4 },
+              { name: "Ben", severity: 2 },
+              { name: "Cal", severity: 5 },
+            ];
+
+            for (const patient of patients) {
+              if (patient.severity >= 4) {
+                console.log(patient.name);
+              }
+            }
+          hints:
+            - 'The loop is: for (const patient of patients) { ... }'
+            - 'A decision inside the loop needs its own braces, and the condition needs parentheses.'
+            - 'Reach into an object with a dot: patient.name'
+          grader:
+            kind: js-output
+            expect_logs:
+              - Ana
+              - Cal
+
+      - kind: checkpoint
+        body: |
+          You can write the fundamentals in a second language, and you know
+          that what transfers is the thinking, not the syntax.
+        unlocks: Next, JavaScript reaches into the page.
+
+  - id: "2.5"
+    track: web
+    title: Changing the page
+    estimate_minutes: 11
+    objectives:
+      - Find an element from JavaScript and change it
+      - Build elements from data rather than writing them by hand
+    beats:
+      - kind: prose
+        body: |
+          The page is a tree, and JavaScript can reach into it. That tree, as
+          JavaScript sees it, is called the **DOM**.
+
+              const title = document.querySelector("h1");
+              title.textContent = "Ward C";
+
+          `document.querySelector` takes the same selectors you wrote in CSS
+          and returns the first match. `querySelectorAll` returns all of them.
+
+          Then you change properties on what you found:
+
+              element.textContent = "new text"     the words inside
+              element.classList.add("urgent")      add a class
+              element.classList.remove("urgent")   take one away
+
+          Use `textContent`, not `innerHTML`, whenever you are inserting text
+          somebody typed. `innerHTML` parses what you give it as markup, so a
+          patient named `<script>` becomes a script. That is the oldest
+          vulnerability on the web, and it still ships weekly.
+
+      - kind: prose
+        body: |
+          The pattern you will use most is **building the page from data** —
+          exactly what Track 1's loop did, except the output is elements
+          instead of printed lines:
+
+              const list = document.querySelector("#board");
+
+              for (const patient of patients) {
+                const item = document.createElement("li");
+                item.textContent = patient.name;
+                list.appendChild(item);
+              }
+
+          Create, fill, attach. Three steps, once per row.
+
+          This is also the moment to notice something that will matter in
+          Track 5: as the page gets more complicated, keeping the DOM in step
+          with your data by hand becomes genuinely hard. Remember that feeling —
+          it is the problem React exists to solve, and it is much easier to
+          appreciate the solution once the problem has annoyed you.
+
+      - kind: web
+        editors: [html, js]
+        intro: |
+          An empty board and a list of patients. Fill it in.
+        starter_html: |
+          <h1>Ward B</h1>
+          <ul id="board"></ul>
+        starter_js: |
+          const patients = [
+            { name: "Ana Rai", severity: 4 },
+            { name: "Ben Thapa", severity: 2 },
+            { name: "Cal Magar", severity: 5 },
+          ];
+
+          const board = document.querySelector("#board");
+        exercise:
+          id: web-dom-build
+          prompt: |
+            Add one <li> to the board for each patient, showing their name.
+            Give the ones with severity 4 or higher the class "urgent".
+          solution: |
+            const patients = [
+              { name: "Ana Rai", severity: 4 },
+              { name: "Ben Thapa", severity: 2 },
+              { name: "Cal Magar", severity: 5 },
+            ];
+
+            const board = document.querySelector("#board");
+
+            for (const patient of patients) {
+              const item = document.createElement("li");
+              item.textContent = patient.name;
+              if (patient.severity >= 4) {
+                item.classList.add("urgent");
+              }
+              board.appendChild(item);
+            }
+          hints:
+            - 'Three steps per patient: createElement, set textContent, appendChild.'
+            - The class only goes on some of them, so that needs an if inside the loop.
+            - 'classList.add("urgent") is how you add a class from JavaScript.'
+          grader:
+            kind: html-structure
+            expect:
+              - selector: "#board li"
+                label: Every patient is on the board
+                count: 3
+              - selector: "#board li:first-child"
+                label: The first is Ana Rai
+                text: Ana Rai
+              - selector: "#board li.urgent"
+                label: Two patients are marked urgent
+                count: 2
+
+      - kind: checkpoint
+        body: |
+          You can find elements, change them, and build the page from data.
+        unlocks: Next, the page responds to a person.
+
+  - id: "2.6"
+    track: web
+    title: Responding to a person
+    estimate_minutes: 11
+    objectives:
+      - Run code when somebody clicks or types
+      - Read a value out of a form field
+    beats:
+      - kind: prose
+        body: |
+          So far your JavaScript runs once, when the page loads. Real pages
+          wait for a person and respond.
+
+              const button = document.querySelector("#call");
+
+              button.addEventListener("click", function () {
+                console.log("called");
+              });
+
+          `addEventListener` takes the name of an event and a **function to run
+          when it happens**. That function is not called now — it is handed
+          over, and the browser calls it later. This is the "functions are
+          values" point from lesson 2.4, and this is what it was for.
+
+          The events you will use most: `click`, `input` (fires on every
+          keystroke), `submit` (on a form), and `change`.
+
+          Reading what somebody typed is `element.value`:
+
+              const field = document.querySelector("#name");
+              console.log(field.value);
+
+          `value` for form fields, `textContent` for everything else. Mixing
+          them up is a rite of passage.
+
+      - kind: web
+        editors: [html, js]
+        intro: |
+          A field, a button, and a list. Make the button work.
+        starter_html: |
+          <h1>Ward B</h1>
+          <input id="name" placeholder="Patient name">
+          <button id="admit">Admit</button>
+          <ul id="board"></ul>
+        starter_js: |
+          const field = document.querySelector("#name");
+          const button = document.querySelector("#admit");
+          const board = document.querySelector("#board");
+        exercise:
+          id: web-events
+          prompt: |
+            When the Admit button is clicked, add an <li> to the board showing
+            whatever is in the input field.
+          solution: |
+            const field = document.querySelector("#name");
+            const button = document.querySelector("#admit");
+            const board = document.querySelector("#board");
+
+            button.addEventListener("click", function () {
+              const item = document.createElement("li");
+              item.textContent = field.value;
+              board.appendChild(item);
+            });
+          hints:
+            - 'The shape is: button.addEventListener("click", function () { ... });'
+            - Inside, it is the same create-fill-attach from the last lesson.
+            - 'What the person typed is field.value, not field.textContent.'
+          grader:
+            kind: dom-behaviour
+            steps:
+              - label: Admitting a patient adds them to the board
+                type:
+                  selector: "#name"
+                  value: Cal Magar
+                click: "#admit"
+                expect_selector: "#board li"
+                expect_text: Cal Magar
+              - label: The board starts empty until the button is clicked
+                expect_selector: "#board"
+                expect_text: ""
+
+      - kind: prose
+        body: |
+          One thing to be careful about, because it is the bug you will
+          actually hit.
+
+              button.addEventListener("click", handleClick());   // wrong
+              button.addEventListener("click", handleClick);     // right
+
+          The first one **calls** `handleClick` immediately and hands over
+          whatever it returned — usually `undefined`. The page loads, something
+          happens once for no reason, and then clicking does nothing. No error.
+
+          Those two lines differ by two characters and behave completely
+          differently, which makes this a favourite of generated code.
+
+      - kind: duel
+        duel_id: duel-listener-called
+        intro: |
+          An agent wrote this to wire up a button. It runs with no errors.
+
+      - kind: checkpoint
+        body: |
+          Your page responds to clicks and typing, and reads what people enter.
+        unlocks: Next, getting data from somewhere else.
+
+  - id: "2.7"
+    track: web
+    title: Fetching data
+    estimate_minutes: 11
+    objectives:
+      - Request data over the network and use the result
+      - Explain why the code after a request runs before the answer arrives
+    beats:
+      - kind: prose
+        body: |
+          A real board does not have its patients typed into the JavaScript. It
+          asks a server.
+
+              const response = await fetch("/patients");
+              const patients = await response.json();
+
+          Two lines, two `await`s, and that word is the whole lesson.
+
+          Fetching takes time — maybe 20 milliseconds, maybe two seconds on a
+          bad connection. JavaScript does not stop and wait, because stopping
+          would freeze the entire page: no scrolling, no clicking, nothing.
+          Instead the request goes off and your code **carries on**.
+
+          `await` says "pause *this function* here until the answer arrives,
+          and let everything else carry on". A function containing `await`
+          must be marked `async`:
+
+              async function loadBoard() {
+                const response = await fetch("/patients");
+                const patients = await response.json();
+                // ...
+              }
+
+      - kind: prose
+        body: |
+          The classic mistake, and it is worth seeing written down:
+
+              let patients = [];
+
+              async function load() {
+                patients = await fetch("/patients").then(r => r.json());
+              }
+
+              load();
+              console.log(patients.length);   // 0
+
+          The `console.log` runs **before** the data arrives. Not sometimes —
+          essentially always, because the network is slower than the next line
+          of code. The variable is genuinely empty at that moment.
+
+          The fix is to use the data where it arrives, not after the call:
+
+              async function load() {
+                const response = await fetch("/patients");
+                render(await response.json());
+              }
+
+          Every "it works when I refresh but not on first load" bug a beginner
+          hits is a version of this.
+
+          Three things a real fetch needs that tutorials skip, and that agents
+          skip for the same reason — because the happy path works without them:
+
+          - **A loading state.** Something on screen while you wait.
+          - **An error state.** The server may be down; `response.ok` tells you.
+          - **An empty state.** Zero results is normal and must not look broken.
+
+          You will build all three in Track 5, and in Track 6 you will check
+          whether the agent remembered them. It usually has not.
+
+      - kind: web
+        editors: [html, js]
+        intro: |
+          `getPatients()` is provided and behaves like a real request — it
+          takes a moment and then resolves to an array.
+        starter_html: |
+          <h1>Ward B</h1>
+          <p id="status">Loading…</p>
+          <ul id="board"></ul>
+        starter_js: |
+          function getPatients() {
+            return new Promise(function (resolve) {
+              setTimeout(function () {
+                resolve([{ name: "Ana Rai" }, { name: "Ben Thapa" }]);
+              }, 10);
+            });
+          }
+
+          const status = document.querySelector("#status");
+          const board = document.querySelector("#board");
+        exercise:
+          id: web-fetch
+          prompt: |
+            Load the patients, add an <li> for each one, and replace the status
+            text with "2 patients" once they have arrived.
+          solution: |
+            function getPatients() {
+              return new Promise(function (resolve) {
+                setTimeout(function () {
+                  resolve([{ name: "Ana Rai" }, { name: "Ben Thapa" }]);
+                }, 10);
+              });
+            }
+
+            const status = document.querySelector("#status");
+            const board = document.querySelector("#board");
+
+            async function load() {
+              const patients = await getPatients();
+              for (const patient of patients) {
+                const item = document.createElement("li");
+                item.textContent = patient.name;
+                board.appendChild(item);
+              }
+              status.textContent = patients.length + " patients";
+            }
+
+            load();
+          hints:
+            - You need an async function so you can await inside it, and you must call it.
+            - Everything that uses the patients has to happen AFTER the await, inside that function.
+            - 'The status is set last, once you know how many arrived: patients.length + " patients"'
+          grader:
+            kind: dom-behaviour
+            steps:
+              - label: Both patients are listed once the data arrives
+                expect_selector: "#board li"
+                expect_count: 2
+              - label: The status reports the count
+                expect_selector: "#status"
+                expect_text: 2 patients
+
+      - kind: checkpoint
+        body: |
+          You can ask for data, wait for it without freezing the page, and use
+          it when it arrives.
+        unlocks: The Ward Board project, then databases.

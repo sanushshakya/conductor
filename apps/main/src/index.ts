@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, shell } from 'electron'
+import { app, BrowserWindow, ipcMain, net, protocol, shell } from 'electron'
 import { spawn } from 'node:child_process'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -10,6 +10,46 @@ import { SidecarSupervisor, type ChildLike } from './sidecar/supervisor'
 import { findPython, provisionVenv, waitForHealth } from './sidecar/provision'
 
 const here = dirname(fileURLToPath(import.meta.url))
+
+/**
+ * The renderer is served over custom protocols rather than `file://`.
+ *
+ * Two reasons, and the second is the one that forced it:
+ *
+ *   - `file://` has a quirky origin that breaks `fetch`, workers and storage
+ *     in ways no browser does, so bugs appear only in the packaged build.
+ *   - The web track runs the learner's own HTML, CSS and JavaScript, and that
+ *     has to happen on a DIFFERENT origin from the app — otherwise it could
+ *     reach `parent.conductor`, the IPC bridge. A sandboxed iframe cannot do
+ *     the job, because an opaque origin inherits the embedder's CSP and the
+ *     learner's inline scripts would be blocked. Two schemes, two origins.
+ */
+const APP_SCHEME = 'app'
+const PREVIEW_SCHEME = 'preview'
+
+protocol.registerSchemesAsPrivileged([
+  { scheme: APP_SCHEME, privileges: { standard: true, secure: true, supportFetchAPI: true } },
+  { scheme: PREVIEW_SCHEME, privileges: { standard: true, secure: true } },
+])
+
+/** Serves the built renderer over both schemes, from the same directory. */
+function registerRendererProtocols(): void {
+  const root = join(here, '../renderer')
+
+  for (const scheme of [APP_SCHEME, PREVIEW_SCHEME]) {
+    protocol.handle(scheme, (request) => {
+      const { pathname } = new URL(request.url)
+      const relative = pathname === '/' || pathname === '' ? 'index.html' : pathname.slice(1)
+      const resolved = join(root, relative)
+
+      // Refuse anything that climbs out of the renderer directory.
+      if (!resolved.startsWith(root)) {
+        return new Response('Not found', { status: 404 })
+      }
+      return net.fetch(`file://${resolved}`)
+    })
+  }
+}
 
 /**
  * Resolves the curriculum directory. Packaged builds ship `content/` as an
@@ -78,12 +118,14 @@ function createWindow(): BrowserWindow {
 
   const devServer = process.env['ELECTRON_RENDERER_URL']
   if (devServer) void window.loadURL(devServer)
-  else void window.loadFile(join(here, '../renderer/index.html'))
+  else void window.loadURL(`${APP_SCHEME}://-/index.html`)
 
   return window
 }
 
 void app.whenReady().then(() => {
+  registerRendererProtocols()
+
   const userData = app.getPath('userData')
   const store = new ProfileStore(userData)
   const sidecar = createSupervisor(userData)

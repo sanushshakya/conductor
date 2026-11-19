@@ -142,7 +142,7 @@ duels:
       print(is_first_visit({"visit_count": 1}))
 
   - id: duel-missing-where
-    lesson_id: "2.5"
+    lesson_id: "3.5"
     language: sql
     brief: |
       You asked for a statement that discharges patient 7. This is what came
@@ -168,7 +168,7 @@ duels:
       WHERE id = 7;
 
   - id: duel-wrong-join-type
-    lesson_id: "2.7"
+    lesson_id: "3.7"
     language: sql
     brief: |
       You asked for every doctor and how many appointments they have. The
@@ -198,7 +198,7 @@ duels:
       ORDER BY n DESC;
 
   - id: duel-wrong-status-code
-    lesson_id: "3.8"
+    lesson_id: "4.8"
     language: python
     brief: |
       An endpoint that fetches one patient. It handles the missing case — just
@@ -233,7 +233,7 @@ duels:
           return row
 
   - id: duel-patch-overwrites
-    lesson_id: "3.7"
+    lesson_id: "4.7"
     language: python
     brief: |
       A PATCH endpoint for updating a patient. Passes its tests.
@@ -329,3 +329,81 @@ duels:
               total = total + minutes
 
       print(total)
+
+  - id: duel-listener-called
+    lesson_id: "2.6"
+    language: javascript
+    brief: |
+      You asked an agent to make the Call button announce the next patient.
+      The page loads with no errors, and clicking does nothing.
+    code: |
+      const button = document.querySelector("#call");
+      const output = document.querySelector("#out");
+
+      function announce() {
+        output.textContent = "Calling Ana";
+      }
+
+      button.addEventListener("click", announce());
+    bug_kind: missing-await
+    bug_line: 8
+    explanation: |
+      `announce()` with parentheses **calls the function immediately** and
+      hands `addEventListener` whatever it returned — which is `undefined`.
+
+      So the announcement happens once as the page loads, and the button is
+      wired to nothing. No error is raised, because registering `undefined` as
+      a listener is perfectly legal.
+
+      Drop the parentheses: you want to hand over the function itself, not the
+      result of running it.
+    fixed_code: |
+      const button = document.querySelector("#call");
+      const output = document.querySelector("#out");
+
+      function announce() {
+        output.textContent = "Calling Ana";
+      }
+
+      button.addEventListener("click", announce);
+
+  - id: duel-state-mutated
+    lesson_id: "5.3"
+    language: javascript
+    brief: |
+      You asked an agent to add a patient to the board. The array ends up
+      correct, and the screen never changes.
+    code: |
+      function Board() {
+        const [patients, setPatients] = useState([]);
+
+        function admit(name) {
+          patients.push({ name: name, severity: 3 });
+          setPatients(patients);
+        }
+
+        return <PatientList patients={patients} />;
+      }
+    bug_kind: shadowed-variable
+    bug_line: 5
+    explanation: |
+      `push` adds to the array React is already holding, so `setPatients` is
+      handed **the same array it already had**.
+
+      React decides whether to re-render by comparing the old value with the
+      new one. They are identical — the same object in memory — so as far as
+      React is concerned nothing changed, and it does not re-render.
+
+      The data really is correct. The screen is stale. No error is raised.
+
+      Build a new array instead: `setPatients([...patients, newPatient])`.
+    fixed_code: |
+      function Board() {
+        const [patients, setPatients] = useState([]);
+
+        function admit(name) {
+          setPatients([...patients, { name: name, severity: 3 }]);
+        }
+
+        return <PatientList patients={patients} />;
+      }

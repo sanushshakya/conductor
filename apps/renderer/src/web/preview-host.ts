@@ -1,0 +1,106 @@
+/**
+ * Talks to the sandboxed preview frame.
+ *
+ * ## Why a separate origin rather than a sandboxed iframe
+ *
+ * The obvious design is `<iframe sandbox="allow-scripts">`. It does not work,
+ * and the reason is worth writing down because it is not obvious: a sandboxed
+ * frame without `allow-same-origin` has an **opaque origin**, and documents
+ * with opaque origins *inherit the embedder's CSP*. The app runs under
+ * `script-src 'self'`, so every inline `<script>` a learner writes would be
+ * blocked, and no policy the child declares can relax what it inherited.
+ *
+ * So isolation comes from the origin instead. The preview document is served
+ * from a different origin to the app, which means:
+ *
+ *   - it keeps its own CSP, and can run the learner's inline scripts;
+ *   - the same-origin policy stops it reaching `parent.conductor`, the IPC
+ *     bridge, or anything the app has stored.
+ *
+ * In development that is `127.0.0.1` against the app's `localhost` — different
+ * origins to a browser, same Vite server. In the packaged app it is a separate
+ * `preview://` protocol registered by the main process.
+ */
+
+export interface PreviewRequest {
+  html?: string
+  css?: string
+  js?: string
+  /** Milliseconds to let the page settle before snapshotting. */
+  settleMs?: number
+}
+
+export interface PreviewResult {
+  /** `console.log` and friends, in order. */
+  logs: string[]
+  /** Uncaught errors, phrased as the browser phrased them. */
+  errors: string[]
+  /** `document.body.innerHTML` after the learner's code ran. */
+  html: string
+  /** `document.body.innerText` — what a person would actually read. */
+  text: string
+}
+
+const RESPONSE_TIMEOUT_MS = 8000
+
+/** Where the preview document lives, which must not be the app's own origin. */
+export function previewOrigin(): string {
+  // The packaged app registers `preview://` in the main process.
+  if (window.location.protocol === 'app:') return 'preview://-'
+
+  // Development: the app is reached on one hostname and the preview on the
+  // other. Both resolve to this machine; only the browser's notion of origin
+  // differs, which is exactly what is wanted.
+  const port = window.location.port || '5178'
+  const host = window.location.hostname === 'localhost' ? '127.0.0.1' : 'localhost'
+  return `http://${host}:${port}`
+}
+
+export function previewUrl(): string {
+  return `${previewOrigin()}/preview.html`
+}
+
+let nextId = 0
+
+/**
+ * Renders `request` in `frame` and resolves with what happened.
+ *
+ * Rejects on timeout rather than hanging: a learner's infinite loop freezes
+ * the frame, and a grader that never settles is indistinguishable from a
+ * broken app.
+ */
+export function renderInPreview(
+  frame: HTMLIFrameElement,
+  request: PreviewRequest,
+): Promise<PreviewResult> {
+  const id = `preview-${(nextId += 1)}`
+
+  return new Promise((resolve, reject) => {
+    const target = frame.contentWindow
+    if (!target) {
+      reject(new Error('the preview is not ready yet'))
+      return
+    }
+
+    const timer = setTimeout(() => {
+      window.removeEventListener('message', onMessage)
+      reject(new Error('the preview did not respond — a loop that never ends is the usual cause'))
+    }, RESPONSE_TIMEOUT_MS)
+
+    function onMessage(event: MessageEvent) {
+      const data = event.data as (PreviewResult & { source?: string; id?: string }) | null
+      if (!data || data.source !== 'conductor-preview' || data.id !== id) return
+      clearTimeout(timer)
+      window.removeEventListener('message', onMessage)
+      resolve({
+        logs: data.logs ?? [],
+        errors: data.errors ?? [],
+        html: data.html ?? '',
+        text: data.text ?? '',
+      })
+    }
+
+    window.addEventListener('message', onMessage)
+    target.postMessage({ source: 'conductor-host', id, ...request }, '*')
+  })
+}

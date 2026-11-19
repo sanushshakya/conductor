@@ -41,3 +41,20 @@ test('the CSP allows the sidecar on loopback and nothing else outbound', () => {
 test('a default-src is declared, so anything unlisted is denied', () => {
   expect(csp).toMatch(/default-src 'self'/)
 })
+
+test('the CSP permits the preview origin to be framed, and only that', () => {
+  const frameSrc = /frame-src ([^;]*)/.exec(csp)?.[1]?.trim().split(/\s+/) ?? []
+  expect(frameSrc.length).toBeGreaterThan(0)
+
+  // The web track runs learner code in a frame on a DIFFERENT origin — that
+  // separation is what stops it reaching the IPC bridge. Only those two
+  // origins may be framed.
+  for (const source of frameSrc) {
+    expect(['http://127.0.0.1:*', 'preview://-']).toContain(source)
+  }
+})
+
+test('the app itself is never framed from an arbitrary origin', () => {
+  expect(csp).not.toMatch(/frame-src[^;]*\*\s*;/)
+  expect(csp).not.toMatch(/frame-src[^;]*'unsafe/)
+})

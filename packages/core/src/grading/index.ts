@@ -19,6 +19,27 @@ export interface GradeContext {
   xp: number
   /** Present in the app; absent in unit tests that grade pure submissions. */
   host?: ConductorApi
+  /**
+   * Renders HTML/CSS/JS and reports what the page became. Supplied by the app
+   * (a cross-origin preview frame) and by the harness (jsdom), so the same
+   * graders run in the lesson and in CI.
+   */
+  renderWeb?: (request: {
+    html?: string
+    css?: string
+    js?: string
+    settleMs?: number
+  }) => Promise<{ logs: string[]; errors: string[]; html: string; text: string }>
+
+  /**
+   * Parses rendered HTML into a queryable document.
+   *
+   * Injectable because `DOMParser` is a browser global and the harness runs
+   * these same graders in Node to check every authored solution. Defaults to
+   * `DOMParser` wherever one exists.
+   */
+  parseHtml?: (html: string) => Document
+
   /** Resolves a named SQL fixture to a live engine. Required by sql-* graders. */
   sqlEngineFor?: (fixture: string) => Promise<import('../sql/engine').SqlEngine>
   /** Overrides the default code runner. Used by the harness and by tests. */

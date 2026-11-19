@@ -1,0 +1,693 @@
+track: frontend
+title: Frontend
+blurb: React, TypeScript and Tailwind over your own API.
+
+lessons:
+  - id: "5.1"
+    track: frontend
+    title: Why a framework
+    estimate_minutes: 10
+    objectives:
+      - Describe the problem React solves
+      - Say what "declarative" means in terms of your own code
+    beats:
+      - kind: prose
+        body: |
+          You built the Ward Board by hand in Track 2, and it worked. Now
+          imagine the next three requests.
+
+          *"Let us remove a patient."* Now you need to find the right `<li>` and
+          delete it — and keep the counter in the header in step.
+
+          *"Show a different colour when the ward is full."* Now the header
+          depends on the number of patients, so every add and remove has to
+          remember to update it.
+
+          *"Let us filter to just the urgent ones."* Now there are two sources
+          of truth — your array, and whatever is currently on screen — and they
+          can disagree.
+
+          That last sentence is the whole problem. Every bug in a hand-built
+          interface is the data and the screen disagreeing.
+
+      - kind: prose
+        body: |
+          Your Track 2 code is **imperative**: a list of instructions for
+          changing the page.
+
+              const item = document.createElement("li");
+              item.textContent = patient.name;
+              board.appendChild(item);
+
+          React is **declarative**: you write what the page should look like
+          *for a given set of data*, and it works out the changes.
+
+              <ul>
+                {patients.map((p) => <li key={p.id}>{p.name}</li>)}
+              </ul>
+
+          There is no `createElement`, no `appendChild`, no "find the old one
+          and remove it". You changed `patients`; the screen now matches. The
+          two cannot drift apart, because the screen is derived from the data
+          rather than maintained alongside it.
+
+          That is the entire pitch, and it is worth being clear-eyed: React is
+          not simpler than what you wrote in Track 2. It is more machinery. It
+          pays for itself at the point where keeping things in step by hand
+          starts costing you — which is sooner than you would think, and which
+          you have now felt.
+
+      - kind: quiz
+        exercise:
+          id: fe-why-react
+          prompt: |
+            Your hand-built board has a bug: after removing a patient, the
+            header still says "3 patients".
+          solution: "[1]"
+          hints:
+            - Where does the number in the header come from, and when is it updated?
+            - The array and the screen are two separate things that must be kept in step.
+            - Which answer removes the possibility rather than fixing this instance?
+          grader:
+            kind: quiz
+            question: |
+              What is the underlying cause?
+            options:
+              - "A typo in the removal code"
+              - "The screen is maintained separately from the data, so the two can disagree"
+              - "The browser cached the old header"
+              - "The patients array was not sorted"
+            correct: [1]
+            explanation: |
+              You can fix this instance by remembering to update the header in
+              the remove function. Then somebody adds a third way to change the
+              list and it happens again.
+
+              The cause is structural: two sources of truth. Deriving the
+              screen from the data makes the bug impossible rather than fixed —
+              which is the difference between a patch and a design.
+
+      - kind: checkpoint
+        body: |
+          React derives the screen from the data, so they cannot disagree. That
+          is what you are buying, and the cost is machinery.
+        unlocks: Next, the unit everything is built from.
+
+  - id: "5.2"
+    track: frontend
+    title: Components and props
+    estimate_minutes: 11
+    objectives:
+      - Write a component and give it data
+      - Split a screen into components that each do one thing
+    beats:
+      - kind: prose
+        body: |
+          A **component** is a function that returns what to show.
+
+              function PatientRow(props) {
+                return <li>{props.name}</li>;
+              }
+
+          That is a JavaScript function. The HTML-looking part is **JSX**, and
+          it is not a string — it is syntax that compiles to function calls.
+          Anything inside `{}` is ordinary JavaScript.
+
+          You use it like a tag, and pass data as attributes:
+
+              <PatientRow name="Ana Rai" />
+
+          Those attributes are **props**. They arrive as one object, and they
+          are read-only — a component never changes its own props, exactly as a
+          well-behaved function never reassigns its parameters.
+
+          Destructuring in the signature is the normal style:
+
+              function PatientRow({ name, severity }) {
+                return <li>{name}</li>;
+              }
+
+      - kind: prose
+        body: |
+          Three rules that will save you an hour each.
+
+          - **Components start with a capital letter.** `<PatientRow />` is your
+            component; `<patientrow />` is an unknown HTML tag. React uses the
+            case to tell them apart.
+          - **Return one root element.** Two siblings need a wrapper, or the
+            empty `<>...</>` fragment if you do not want an extra div.
+          - **`className`, not `class`.** `class` is a reserved word in
+            JavaScript, so JSX uses `className`.
+
+          And the design question, which matters more than the syntax: **what
+          should be a component?** The useful test is whether it has one job
+          you can name. `PatientRow` is a good component. `Stuff` is not. If
+          you cannot name it, the boundary is in the wrong place — the same
+          instinct as naming a function in lesson 1.6.
+
+      - kind: web
+        editors: [js]
+        starter_js: |
+          function patientLabel(patient) {
+            return patient.name;
+          }
+
+          console.log(patientLabel({ name: "Ana Rai", severity: 4 }));
+          console.log(patientLabel({ name: "Ben Thapa", severity: 2 }));
+          console.log(patientLabel({ name: "Cal Magar", severity: 5 }));
+        intro: |
+          Components are functions, so you can reason about them as functions.
+          This one is the data-shaping half of a component.
+        exercise:
+          id: fe-props-shape
+          prompt: |
+            Write patientLabel(patient) returning a string like
+            "Ana Rai — urgent" when severity is 4 or more, and just the name
+            otherwise.
+          solution: |
+            function patientLabel(patient) {
+              if (patient.severity >= 4) {
+                return patient.name + " — urgent";
+              }
+              return patient.name;
+            }
+
+            console.log(patientLabel({ name: "Ana Rai", severity: 4 }));
+            console.log(patientLabel({ name: "Ben Thapa", severity: 2 }));
+            console.log(patientLabel({ name: "Cal Magar", severity: 5 }));
+          hints:
+            - This is a plain function; the component would just render what it returns.
+            - The separator is a space, an em dash, and a space.
+            - 'Return early for the urgent case, then fall through to the plain name.'
+          grader:
+            kind: js-output
+            expect_logs:
+              - "Ana Rai — urgent"
+              - Ben Thapa
+              - "Cal Magar — urgent"
+            exact: true
+
+      - kind: checkpoint
+        body: |
+          A component is a function returning JSX, props are its arguments, and
+          a good component has one job you can name.
+        unlocks: Next, what happens when things change.
+
+  - id: "5.3"
+    track: frontend
+    title: State
+    estimate_minutes: 12
+    objectives:
+      - Hold changing data in a component
+      - Update state without mutating it
+    beats:
+      - kind: prose
+        body: |
+          Props come from outside. **State** is data a component owns and can
+          change:
+
+              import { useState } from "react";
+
+              function Board() {
+                const [patients, setPatients] = useState([]);
+                // ...
+              }
+
+          `useState` returns the current value and a function to replace it.
+          The array destructuring is just convention — the names are yours.
+
+          The rule that makes React work: **never change state directly.**
+
+              patients.push(newPatient);        // wrong — React sees nothing
+              setPatients([...patients, newPatient]);   // right — a new array
+
+          React decides whether to re-render by comparing the old value to the
+          new one. Pushing into the existing array leaves it the *same array*,
+          so nothing appears to have changed and the screen does not update.
+          You get no error. The data is right and the screen is stale — which
+          is the exact bug React was supposed to eliminate, reintroduced by
+          hand.
+
+          `[...patients, newPatient]` builds a new array with the old contents
+          plus one. Same for objects: `{ ...patient, seen: true }`.
+
+      - kind: prose
+        body: |
+          Two more things worth knowing before you write any.
+
+          **Setting state is asynchronous.** The variable does not change on
+          the line after you set it:
+
+              setCount(count + 1);
+              console.log(count);   // still the old value
+
+          React re-runs the component with the new value; it does not reach
+          back and edit the variable you already have.
+
+          **State belongs to the component that needs it** — and when two
+          components need the same data, it moves up to their nearest common
+          parent, which is called *lifting state up*. Your Ward Board keeps its
+          patients in the board, because both the list and the header need them.
+
+      - kind: web
+        editors: [js]
+        starter_js: |
+          function admit(patients, name) {
+            patients.push({ name: name, severity: 3 });
+            return patients;
+          }
+
+          const ward = [{ name: "Ana Rai", severity: 4 }];
+          const after = admit(ward, "Dee Lama");
+          console.log(ward.length);
+          console.log(after.length);
+          console.log(after[after.length - 1].name);
+        intro: |
+          The update itself, as a pure function — which is exactly what you
+          would pass to a state setter.
+        exercise:
+          id: fe-state-update
+          prompt: |
+            Write admit(patients, name) returning a NEW array with
+            { name, severity: 3 } added at the end. The original must not change.
+          solution: |
+            function admit(patients, name) {
+              return [...patients, { name: name, severity: 3 }];
+            }
+
+            const ward = [{ name: "Ana Rai", severity: 4 }];
+            const after = admit(ward, "Dee Lama");
+            console.log(ward.length);
+            console.log(after.length);
+            console.log(after[after.length - 1].name);
+          hints:
+            - 'push changes the array you were given; React would see no change at all.'
+            - The spread operator copies the old items into a new array.
+            - 'It is one line: return [...patients, { name: name, severity: 3 }];'
+          grader:
+            kind: js-output
+            expect_logs:
+              - "1"
+              - "2"
+              - Dee Lama
+            exact: true
+
+      - kind: duel
+        duel_id: duel-state-mutated
+        intro: |
+          An agent wrote this to add a patient. The array is correct afterwards
+          and the screen never updates.
+
+      - kind: checkpoint
+        body: |
+          State is data a component owns, you replace it rather than edit it,
+          and the screen follows.
+        unlocks: Next, types — which you already write, informally.
+
+  - id: "5.4"
+    track: frontend
+    title: TypeScript
+    estimate_minutes: 12
+    objectives:
+      - Describe data with a type and let the compiler check it
+      - Explain why a type is a specification a machine can enforce
+    beats:
+      - kind: prose
+        body: |
+          You have been writing types all along, in comments and in your head:
+          *patients is a list of objects with a name and a severity.*
+          TypeScript writes that down so the computer can check it.
+
+              type Patient = {
+                id: number;
+                name: string;
+                severity: number;
+                dischargedOn: string | null;
+              };
+
+              function label(patient: Patient): string {
+                return patient.name;
+              }
+
+          Now `patient.nmae` is an error in your editor, before you run
+          anything. So is passing a string where a number belongs, and so is
+          forgetting that `dischargedOn` might be null — which is the exact
+          trap from SQL lesson 3.3, caught at compile time this time.
+
+          `string | null` is a **union**: one of these. TypeScript then refuses
+          to let you use it as a string until you have checked:
+
+              if (patient.dischargedOn !== null) {
+                patient.dischargedOn.slice(0, 4);   // now it is safe
+              }
+
+      - kind: prose
+        body: |
+          Now the connection that makes this lesson matter more than its syntax.
+
+          In lesson 6.3 you will learn that a brief an agent can execute names
+          the interface, the rules and the proof. **A type is the first of
+          those, written in a form a machine checks continuously.**
+
+              function dischargePatient(id: number, on: string): Promise<Patient>
+
+          That one line tells an agent what goes in, what comes out, and that
+          it is asynchronous. If what it writes does not match, the compiler
+          says so immediately — not in review, not in production.
+
+          This is why TypeScript has become near-universal on teams using
+          agents heavily. When a machine is producing code quickly, a second
+          machine checking the shapes is worth a great deal. Types are the
+          cheapest verification you will ever add.
+
+      - kind: web
+        editors: [js]
+        starter_js: |
+          function statusOf(patient) {
+            return patient.dischargedOn.length > 0 ? "discharged" : "on the ward";
+          }
+
+          console.log(statusOf({ name: "Ana", dischargedOn: null }));
+          console.log(statusOf({ name: "Ben", dischargedOn: "2026-11-18" }));
+        intro: |
+          The null check TypeScript would force you to write. The logic is the
+          part that matters; the compiler just makes forgetting it impossible.
+        exercise:
+          id: fe-types-null
+          prompt: |
+            Write statusOf(patient) returning "discharged" when dischargedOn is
+            a date string, and "on the ward" when it is null.
+          solution: |
+            function statusOf(patient) {
+              if (patient.dischargedOn === null) {
+                return "on the ward";
+              }
+              return "discharged";
+            }
+
+            console.log(statusOf({ name: "Ana", dischargedOn: null }));
+            console.log(statusOf({ name: "Ben", dischargedOn: "2026-11-18" }));
+          hints:
+            - Run the starter against a patient who is still on the ward.
+            - 'You cannot read .length of null — check for null FIRST.'
+            - '=== null is the check; everything else means they have a date.'
+          grader:
+            kind: js-output
+            expect_logs:
+              - on the ward
+              - discharged
+            exact: true
+
+      - kind: checkpoint
+        body: |
+          A type describes your data, the compiler enforces it, and it is the
+          machine-checkable half of the brief you will write for an agent.
+        unlocks: Next, styling without leaving the markup.
+
+  - id: "5.5"
+    track: frontend
+    title: Tailwind
+    estimate_minutes: 9
+    objectives:
+      - Style a component with utility classes
+      - Say when a utility-first approach helps and when it does not
+    beats:
+      - kind: prose
+        body: |
+          Tailwind replaces writing CSS rules with composing small classes
+          directly on the element:
+
+              <li className="flex items-center gap-3 rounded-lg bg-red-50 px-4 py-2">
+                Cal Magar
+              </li>
+
+          Every class does one thing. `px-4` is horizontal padding, `gap-3` is
+          the flex gap, `rounded-lg` is a border radius. It is the CSS you
+          learned in Track 2 — the box model, flexbox — with names instead of
+          declarations.
+
+          What you get for that:
+
+          - **No naming.** Naming things is genuinely hard, and utility classes
+            remove an entire category of it.
+          - **No dead CSS.** Delete the element, the styling goes with it.
+            Hand-written stylesheets accumulate rules nobody dares remove.
+          - **Values from a scale.** `p-4` is a step on a spacing scale, not an
+            arbitrary number, so a page stays visually consistent by default.
+
+          What it costs: the markup is noisy, and you must know the underlying
+          CSS to use it well. It is a shorthand, not a replacement for
+          understanding — which is why this track teaches it after Track 2 and
+          not instead of it.
+
+      - kind: prose
+        body: |
+          Worth knowing: agents are *very* good at Tailwind. Ask for a styled
+          component and what comes back is usually close to right, because the
+          class names describe exactly what they do and there is no separate
+          file to keep in step.
+
+          Which is precisely why you need Track 2's CSS. When the agent gives
+          you forty utility classes and the spacing is wrong, you need to know
+          that `px-4` is padding and `mx-4` is margin to find it in five
+          seconds instead of twenty minutes.
+
+      - kind: web
+        editors: [html]
+        intro: |
+          Tailwind's classes are ordinary CSS underneath. The stylesheet here
+          defines a few of them so you can see the mapping directly.
+        starter_html: |
+          <ul>
+            <li class="">Cal Magar</li>
+          </ul>
+        starter_css: |
+          .flex { display: flex }
+          .items-center { align-items: center }
+          .gap-3 { gap: 12px }
+          .rounded-lg { border-radius: 8px }
+          .bg-red-50 { background: #fef2f2 }
+          .px-4 { padding-left: 16px; padding-right: 16px }
+          .py-2 { padding-top: 8px; padding-bottom: 8px }
+        exercise:
+          id: fe-tailwind
+          prompt: |
+            Give the list item these utilities: flex, items-center, gap-3,
+            rounded-lg, bg-red-50, px-4 and py-2.
+          solution: |
+            <ul>
+              <li class="flex items-center gap-3 rounded-lg bg-red-50 px-4 py-2">Cal Magar</li>
+            </ul>
+          hints:
+            - All seven go in the one class attribute, separated by spaces.
+            - Order does not matter — each class sets different properties.
+            - 'class="flex items-center gap-3 rounded-lg bg-red-50 px-4 py-2"'
+          grader:
+            kind: html-structure
+            expect:
+              - selector: "li.flex.items-center.gap-3"
+                label: Layout utilities are applied
+              - selector: "li.rounded-lg.bg-red-50"
+                label: Appearance utilities are applied
+              - selector: "li.px-4.py-2"
+                label: Spacing utilities are applied
+                text: Cal Magar
+            forbid:
+              - selector: "[style]"
+                label: Utilities instead of inline styles
+
+      - kind: checkpoint
+        body: |
+          You can style with utilities, and you know they are shorthand for the
+          CSS you already understand.
+        unlocks: Next, connecting a component to your own API.
+
+  - id: "5.6"
+    track: frontend
+    title: Fetching into a component
+    estimate_minutes: 12
+    objectives:
+      - Load data when a component appears
+      - Handle loading, error and empty states deliberately
+    beats:
+      - kind: prose
+        body: |
+          Your component needs the patients from the API you built in Track 4.
+          Fetching is a **side effect** — something that reaches outside the
+          component — and those go in `useEffect`:
+
+              useEffect(() => {
+                async function load() {
+                  const response = await fetch("/patients");
+                  setPatients(await response.json());
+                }
+                load();
+              }, []);
+
+          The `[]` at the end is the dependency list, and it is the part people
+          get wrong. It means *run this once, when the component first
+          appears*. Leave it out entirely and the effect runs after **every**
+          render — including the one your own `setPatients` just caused, which
+          is an infinite loop that hammers your server.
+
+      - kind: prose
+        body: |
+          Now the part this whole lesson exists for.
+
+          A fetch has **four** outcomes, and tutorials show one:
+
+              loading   the request is in flight
+              error     the server is down, or returned 500
+              empty     it worked, and there are no patients
+              data      it worked, and here they are
+
+          Handle all four, every time:
+
+              if (loading) return <p>Loading…</p>;
+              if (error) return <p>Could not reach the ward system.</p>;
+              if (patients.length === 0) return <p>Nobody is waiting.</p>;
+              return <ul>{patients.map(...)}</ul>;
+
+          The empty state is the one that catches people. Zero results is a
+          perfectly normal thing to happen, and a screen that renders nothing
+          at all looks identical to a screen that is broken — so the user
+          reloads, then calls you.
+
+          **This is also the single most reliable gap in generated code.** An
+          agent asked for "a page listing patients" produces the data case,
+          beautifully. Ask yourself the other three every time, because it will
+          not.
+
+      - kind: web
+        editors: [js]
+        starter_js: |
+          function viewState(state) {
+            return "data";
+          }
+
+          console.log(viewState({ loading: true, error: null, patients: [] }));
+          console.log(viewState({ loading: false, error: "down", patients: [] }));
+          console.log(viewState({ loading: false, error: null, patients: [] }));
+          console.log(viewState({ loading: false, error: null, patients: [{ name: "Ana" }] }));
+        intro: |
+          The decision itself, extracted. This is what the component's return
+          statement is choosing between.
+        exercise:
+          id: fe-fetch-states
+          prompt: |
+            Write viewState({ loading, error, patients }) returning "loading",
+            "error", "empty" or "data" — checked in that order.
+          solution: |
+            function viewState(state) {
+              if (state.loading) {
+                return "loading";
+              }
+              if (state.error) {
+                return "error";
+              }
+              if (state.patients.length === 0) {
+                return "empty";
+              }
+              return "data";
+            }
+
+            console.log(viewState({ loading: true, error: null, patients: [] }));
+            console.log(viewState({ loading: false, error: "down", patients: [] }));
+            console.log(viewState({ loading: false, error: null, patients: [] }));
+            console.log(viewState({ loading: false, error: null, patients: [{ name: "Ana" }] }));
+          hints:
+            - Four outcomes, checked in order — the same shape as the triage in lesson 1.3.
+            - 'Order matters: a failed request has no patients, so error must be checked before empty.'
+            - The last return needs no condition.
+          grader:
+            kind: js-output
+            expect_logs:
+              - loading
+              - error
+              - empty
+              - data
+            exact: true
+
+      - kind: checkpoint
+        body: |
+          You can load data when a component appears, and you handle all four
+          outcomes rather than the happy one.
+        unlocks: The Hospital Console, then directing agents.
+
+  - id: "5.7"
+    track: frontend
+    title: Putting it together
+    estimate_minutes: 14
+    objectives:
+      - Set up a real React and TypeScript project
+      - Know which problems belong to the build tool
+    beats:
+      - kind: prose
+        body: |
+          Everything so far has run in this app's preview. A real project needs
+          a build step, because browsers do not understand JSX or TypeScript —
+          something has to turn them into plain JavaScript first.
+
+          **Vite** is the tool that does it, and setting up is one command:
+
+              npm create vite@latest hospital-console -- --template react-ts
+              cd hospital-console
+              npm install
+              npm run dev
+
+          That gives you React, TypeScript, a dev server and hot reload. Adding
+          Tailwind is its own short setup, and the current steps are on
+          Tailwind's own site — check there rather than following any tutorial,
+          including this one, for the exact commands.
+        volatile: true
+        verified_on: "2026-11-19"
+
+      - kind: prose
+        body: |
+          Four things that will confuse you once each, so meet them here.
+
+          - **`npm run dev` versus `npm run build`.** Dev is fast and
+            unminified with hot reload; build produces the files you deploy.
+            Something can work in dev and fail in build — usually a missing
+            dependency that dev happened to resolve.
+          - **CORS.** Your page is on port 5173 and your API on 8000; the
+            browser treats those as different origins and blocks the request
+            unless the API says otherwise. It is the API's job to fix, with a
+            CORS middleware, and it is nearly always a beginner's first
+            frontend-meets-backend wall.
+          - **`.env` files.** Configuration that differs between your machine
+            and production. Never commit them.
+          - **The `dist` folder.** Build output. Never commit it either.
+
+          None of this is conceptually hard. All of it is unfamiliar, and
+          unfamiliar is what makes people think they are bad at this.
+
+      - kind: checklist
+        intro: |
+          Get a project running before the boss. Each item is checked by doing
+          it, not by reading it.
+        items:
+          - id: fe-project-created
+            text: You created a React + TypeScript project with Vite and it starts.
+            why: "`npm run dev` prints a URL and that URL shows the starter page."
+          - id: fe-tailwind-installed
+            text: Tailwind is installed and a utility class visibly changes something.
+            why: Put `className="text-red-500"` on something and confirm it turns red.
+          - id: fe-component-rendered
+            text: You replaced the starter page with a component you wrote.
+            why: Your own component, your own name for it, rendering your own markup.
+          - id: fe-api-running
+            text: Your Track 4 API is running at the same time.
+            why: Two terminals. The frontend and the backend are separate programs.
+          - id: fe-cors-handled
+            text: The page can fetch from your API without a CORS error.
+            why: Check the browser console. If you see CORS, the fix is in the API.
+          - id: fe-build-works
+            text: "`npm run build` completes without errors."
+            why: Dev mode forgives things the build does not. Find out now, not later.
+
+      - kind: checkpoint
+        body: |
+          You have a real React and TypeScript project, styled with Tailwind,
+          talking to your own API.
+        unlocks: The Hospital Console.

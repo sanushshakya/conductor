@@ -172,7 +172,7 @@ test('bug-hunter needs ten duels won', () => {
 })
 
 test('schema-architect is earned by finishing the normalisation lesson', () => {
-  const p = profileAt('2026-11-18', { completedLessons: ['2.6'] })
+  const p = profileAt('2026-11-18', { completedLessons: ['3.6'] })
   expect(evaluateBadges(p)).toContain('schema-architect')
 })
 
@@ -220,7 +220,7 @@ test('completeLesson records the lesson once and awards lesson XP', () => {
 })
 
 test('completeLesson adds newly earned badges to the profile', () => {
-  const p = completeLesson(profileAt('2026-11-18'), '2.6')
+  const p = completeLesson(profileAt('2026-11-18'), '3.6')
   expect(p.badges).toContain('schema-architect')
 })
 
@@ -300,4 +300,23 @@ test('a spent forgiveness token is not handed straight back', () => {
   p = touchStreak(p, localDate('2026-11-26', 9))
   expect(p.streak.current).toBe(8)
   expect(p.streak.forgivenessTokens).toBe(0)
+})
+
+
+test('every badge points at a lesson that exists', async () => {
+  // A badge keyed to a lesson id that no longer exists can never be earned,
+  // which is exactly what inserting a track in the middle threatens.
+  const { tracks } = await import('../../../harness/lint-content').then((m) =>
+    m.lintContent('content'),
+  )
+  const lessonIds = new Set(tracks.flatMap((t) => t.lessons.map((l) => l.id)))
+  const fresh = freshProfile('2026-11-18T00:00:00.000Z')
+
+  for (const badge of BADGES) {
+    // Earn it by completing every lesson, then check it fires.
+    const everything = { ...fresh, completedLessons: [...lessonIds], duelsWon: 99,
+      streak: { ...fresh.streak, longest: 99 },
+      exerciseResults: { any: { passed: true, checks: [], xpAwarded: 0 } } }
+    expect(badge.earned(everything), `${badge.id} can never be earned`).toBe(true)
+  }
 })

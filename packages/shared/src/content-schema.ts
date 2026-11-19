@@ -41,6 +41,9 @@ export const GRADER_KINDS = [
   'python-output',
   'python-unit',
   'api-suite',
+  'html-structure',
+  'js-output',
+  'dom-behaviour',
 ] as const
 export type GraderKind = (typeof GRADER_KINDS)[number]
 
@@ -176,6 +179,83 @@ const ApiSuiteGraderSchema = z
   })
   .strict()
 
+/**
+ * Asserts on the page the learner's HTML and CSS produced.
+ *
+ * Selectors are checked against the RENDERED document rather than the source
+ * text, so an answer is graded on what a person would actually see — which is
+ * also the only definition of correct that survives the learner formatting
+ * their markup differently from the reference.
+ */
+const HtmlStructureGraderSchema = z
+  .object({
+    kind: z.literal('html-structure'),
+    expect: z
+      .array(
+        z
+          .object({
+            /** A CSS selector that must match. */
+            selector: z.string().min(1),
+            label: z.string().min(1),
+            /** How many elements must match. Defaults to at least one. */
+            count: z.number().int().nonnegative().optional(),
+            /** Trimmed textContent the first match must equal. */
+            text: z.string().optional(),
+            /** Substring the first match's text must contain. */
+            textContains: z.string().optional(),
+            /** Attributes the first match must carry. */
+            attributes: z.record(z.string(), z.string()).optional(),
+          })
+          .strict(),
+      )
+      .min(1),
+    /** Selectors that must NOT match — e.g. forbidding a hardcoded answer. */
+    forbid: z.array(z.object({ selector: z.string(), label: z.string() }).strict()).optional(),
+  })
+  .strict()
+
+/** Checks what the learner's JavaScript printed, the way `output-match` does. */
+const JsOutputGraderSchema = z
+  .object({
+    kind: z.literal('js-output'),
+    expectLogs: z.array(z.string()).min(1),
+    /** When false, the logs need only contain these in order. Defaults true. */
+    exact: z.boolean().optional(),
+  })
+  .strict()
+
+/**
+ * Runs the page, performs an interaction, and asserts on the result.
+ *
+ * This is how real frontend tests are written — click the thing, check what
+ * the user now sees — so the learner is being held to the same standard their
+ * own tests will use in Track 5.
+ */
+const DomBehaviourGraderSchema = z
+  .object({
+    kind: z.literal('dom-behaviour'),
+    /** Markup the exercise supplies, if the learner is only writing script. */
+    html: z.string().optional(),
+    steps: z
+      .array(
+        z
+          .object({
+            label: z.string().min(1),
+            /** A selector to click before asserting. */
+            click: z.string().optional(),
+            /** A selector plus the value to type into it. */
+            type: z.object({ selector: z.string(), value: z.string() }).strict().optional(),
+            expectSelector: z.string().optional(),
+            expectText: z.string().optional(),
+            expectTextContains: z.string().optional(),
+            expectCount: z.number().int().nonnegative().optional(),
+          })
+          .strict(),
+      )
+      .min(1),
+  })
+  .strict()
+
 export const GraderConfigSchema = z.discriminatedUnion('kind', [
   // `superRefine` on the quiz schema makes it a ZodEffects, which a
   // discriminated union cannot hold, so the quiz branch is the plain object
@@ -189,6 +269,9 @@ export const GraderConfigSchema = z.discriminatedUnion('kind', [
   PythonOutputGraderSchema,
   PythonUnitGraderSchema,
   ApiSuiteGraderSchema,
+  HtmlStructureGraderSchema,
+  JsOutputGraderSchema,
+  DomBehaviourGraderSchema,
 ]).superRefine((g, ctx) => {
   if (g.kind === 'quiz') {
     for (const i of g.correct) {
@@ -254,6 +337,27 @@ const CodeBeatSchema = z
   })
   .strict()
 
+/**
+ * A web exercise: three editors, one live preview.
+ *
+ * HTML, CSS and JavaScript are separate fields because they are separate
+ * files in real work, and because a learner who is only being asked about CSS
+ * should not have to scroll past markup to find the part they are editing.
+ */
+const WebBeatSchema = z
+  .object({
+    kind: z.literal('web'),
+    intro: z.string().optional(),
+    /** Which editors to show. Defaults to all three. */
+    editors: z.array(z.enum(['html', 'css', 'js'])).optional(),
+    starterHtml: z.string().optional(),
+    starterCss: z.string().optional(),
+    starterJs: z.string().optional(),
+    exercise: ExerciseSchema,
+    ...BeatBase,
+  })
+  .strict()
+
 const SqlBeatSchema = z
   .object({
     kind: z.literal('sql'),
@@ -313,6 +417,7 @@ export const BeatSchema = z
     VisualBeatSchema,
     CodeBeatSchema,
     SqlBeatSchema,
+    WebBeatSchema,
     QuizBeatSchema,
     DuelBeatSchema,
     CheckpointBeatSchema,
@@ -378,6 +483,21 @@ export const BossSchema = z
           .object({
             id: z.string().min(1),
             label: z.string().min(1),
+            /**
+             * Present when the criterion is a web exercise. Carries the same
+             * editors and starters a `web` beat does, so a boss and a lesson
+             * describe a web exercise identically — and the solution runner
+             * applies one rule to both.
+             */
+            web: z
+              .object({
+                editors: z.array(z.enum(['html', 'css', 'js'])).optional(),
+                starterHtml: z.string().optional(),
+                starterCss: z.string().optional(),
+                starterJs: z.string().optional(),
+              })
+              .strict()
+              .optional(),
             exercise: ExerciseSchema,
           })
           .strict(),

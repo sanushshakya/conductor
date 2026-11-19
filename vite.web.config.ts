@@ -22,6 +22,16 @@ export default defineConfig({
       '@': resolve(__dirname, 'apps/renderer/src'),
     },
   },
-  server: { port: 5178, strictPort: false },
+  server: {
+    port: 5178,
+    strictPort: false,
+    // Bound on all interfaces so BOTH http://localhost:5178 and
+    // http://127.0.0.1:5178 answer. They are different origins to the
+    // browser, which is what isolates the preview sandbox from the app:
+    // a sandboxed iframe inherits the parent's CSP (opaque origins always
+    // do), so a separate origin is the only way the preview document can
+    // run the inline scripts a learner writes.
+    host: true,
+  },
   build: { outDir: resolve(__dirname, 'out/web') },
 })

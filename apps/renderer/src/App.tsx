@@ -57,7 +57,13 @@ export function App() {
   const lesson = lessonId ? lessonById(lessonId) : undefined
   const boss = bossId ? bossById(bossId) : undefined
 
-  /** Tracks whose exercises genuinely cannot be graded right now. */
+  /**
+   * Tracks whose exercises genuinely cannot be graded right now.
+   *
+   * Boot, Web, SQL and Frontend all run entirely in the renderer — the Boot
+   * interpreter, the preview frame and SQLite-on-WASM — so four of the eight
+   * tracks stay open with no Python at all.
+   */
   function locked(track: Track): boolean {
     if (track.track === 'fundamentals' || track.track === 'api') return !caps.pythonExec
     return false

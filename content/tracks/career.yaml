@@ -3,7 +3,7 @@ title: Career
 blurb: The tool atlas, your portfolio, and the next ninety days.
 
 lessons:
-  - id: "5.1"
+  - id: "7.1"
     track: career
     title: The Tool Atlas
     estimate_minutes: 12
@@ -88,7 +88,7 @@ lessons:
           and a dated map rather than an undated wall of logos.
         unlocks: Next, turning what you built into something you can show.
 
-  - id: "5.2"
+  - id: "7.2"
     track: career
     title: Your portfolio is three projects
     estimate_minutes: 10
@@ -134,7 +134,7 @@ lessons:
         language: python
         intro: |
           Score a README before you publish it, the way you scored a brief in
-          lesson 4.3.
+          lesson 6.3.
         exercise:
           id: career-readme-score
           prompt: |
@@ -166,7 +166,7 @@ lessons:
           thirty seconds.
         unlocks: Next, where they live.
 
-  - id: "5.3"
+  - id: "7.3"
     track: career
     title: Git and GitHub properly
     estimate_minutes: 11
@@ -176,7 +176,7 @@ lessons:
     beats:
       - kind: prose
         body: |
-          You met Git in lesson 4.6 as an undo button. It is also the first
+          You met Git in lesson 6.6 as an undo button. It is also the first
           thing anyone looks at when they are deciding whether to interview
           you, and what they are reading is not the code — it is the history.
 
@@ -253,7 +253,7 @@ lessons:
           repository that should not be public.
         unlocks: Next, how to learn the things nobody taught you.
 
-  - id: "5.4"
+  - id: "7.4"
     track: career
     title: Reading what you did not write
     estimate_minutes: 10
@@ -335,7 +335,7 @@ lessons:
           source when the docs run out.
         unlocks: Next, what interviews actually test now.
 
-  - id: "5.5"
+  - id: "7.5"
     track: career
     title: Interviewing when AI exists
     estimate_minutes: 11
@@ -356,7 +356,7 @@ lessons:
             what you would do differently. This is the big one, and it is why
             point four of your README matters.
           - **Can you debug something unfamiliar?** Often live, in code you did
-            not write. This is lesson 1.7 and lesson 4.8, exactly.
+            not write. This is lesson 1.7 and lesson 6.8, exactly.
           - **Can you review code and spot what is wrong with it?** Increasingly
             common, and it is the Agent Duel with a person watching.
           - **Can you direct a model and verify what it gives you?** Some
@@ -421,7 +421,7 @@ lessons:
           Explain, debug, review, direct — and describe your own work exactly.
         unlocks: The last lesson. What to do tomorrow.
 
-  - id: "5.6"
+  - id: "7.6"
     track: career
     title: The next ninety days
     estimate_minutes: 12

@@ -255,7 +255,7 @@ lessons:
           `str(hour)` says "treat this number as text". Now both sides are text
           and the join makes sense.
 
-          Remember this feeling. In Track 4 you will hand a task to an AI agent
+          Remember this feeling. In Track 6 you will hand a task to an AI agent
           and get back forty lines that look completely reasonable. The skill you
           just used — read the error, find the line, work out what it actually
           says — is the skill that tells you whether those forty lines work.
