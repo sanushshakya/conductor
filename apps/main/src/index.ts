@@ -88,13 +88,16 @@ function registerRendererProtocols(): void {
 function contentRoot(): string {
   const packaged = join(process.resourcesPath ?? '', 'content')
   if (existsSync(packaged)) return packaged
-  return join(here, '../../../content')
+  // `here` is out/main/ in both dev and the packaged build, so the repository
+  // root is two levels up — NOT three, which was written against the source
+  // layout and pointed outside the project entirely.
+  return join(here, '../../content')
 }
 
 /** Where the sidecar's source lives: packaged as a resource, or in the repo. */
 function sidecarRoot(): string {
   const packaged = join(process.resourcesPath ?? '', 'mentor')
-  return existsSync(packaged) ? packaged : join(here, '../../../services/mentor')
+  return existsSync(packaged) ? packaged : join(here, '../../services/mentor')
 }
 
 function createSupervisor(userData: string): SidecarSupervisor {
@@ -127,7 +130,11 @@ function createWindow(): BrowserWindow {
     backgroundColor: '#0b0e14',
     titleBarStyle: 'hiddenInset',
     webPreferences: {
-      preload: join(here, '../preload/index.mjs'),
+      // electron-vite emits `.js` here, not `.mjs`. A wrong path fails
+      // silently: the bridge never loads, `window.conductor` is undefined, and
+      // the renderer quietly falls back to its browser host — so progress goes
+      // to localStorage instead of disk and the sidecar is never reachable.
+      preload: join(here, '../preload/index.js'),
       // The three flags that make the preload bridge the only way out of the
       // renderer. Nothing in this app needs them relaxed.
       contextIsolation: true,
