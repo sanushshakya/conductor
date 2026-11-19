@@ -24,7 +24,7 @@ import { execFileSync } from 'node:child_process'
 import { cpSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync, existsSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { planWebBuild } from './web-build-plan.mjs'
+import { planWebBuild, rewriteFrameSrc } from './web-build-plan.mjs'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const out = join(root, 'out/web')
@@ -75,6 +75,23 @@ if (plan.webTrackIncluded) {
     )
     process.exit(1)
   }
+}
+
+// The app's own CSP decides what it is allowed to frame, and the source
+// list names the development hosts and the desktop app's preview:// scheme
+// — none of which a deployed app uses. Without this the deployed app
+// refuses to frame its own preview and the web lessons show an empty panel.
+if (plan.webTrackIncluded) {
+  const indexPath = join(appOut, 'index.html')
+  const rewritten = rewriteFrameSrc(readFileSync(indexPath, 'utf8'), previewOrigin)
+  if (rewritten === null) {
+    console.error(
+      '\nbuild:web — no frame-src found in the built index.html.\n' +
+        "The app's CSP has changed shape; the deployed app would refuse to frame the preview.\n",
+    )
+    process.exit(1)
+  }
+  writeFileSync(indexPath, rewritten)
 }
 
 // The preview document is served from the OTHER origin, so it must not also

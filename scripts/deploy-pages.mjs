@@ -4,9 +4,14 @@
  * The two origins have to know about each other before either is built: the
  * app is compiled with the preview's origin baked in, and the preview is
  * served with a frame-ancestors header naming the app. So the projects are
- * created FIRST — a Pages project's URL is `https://<name>.pages.dev`, which
- * is knowable as soon as the name is claimed — and only then is anything
- * built or uploaded.
+ * created FIRST, and then their real domains are READ BACK.
+ *
+ * Reading back is not a formality. A project's name and its subdomain are
+ * different things: `.pages.dev` subdomains are global, so asking for
+ * `conductor` can give you a project called `conductor` serving on
+ * `conductor-c42.pages.dev`. Assuming `https://<name>.pages.dev` produced a
+ * deployment whose preview refused to be framed by its own app — and a
+ * success message pointing at a stranger's website.
  *
  *   NAME=conductor npm run deploy
  *
@@ -23,8 +28,6 @@ const wrangler = join(root, 'node_modules/.bin/wrangler')
 const name = process.env.NAME ?? 'conductor'
 const appProject = name
 const previewProject = `${name}-preview`
-const appOrigin = `https://${appProject}.pages.dev`
-const previewOrigin = `https://${previewProject}.pages.dev`
 
 if (!/^[a-z0-9][a-z0-9-]{0,56}[a-z0-9]$/.test(name)) {
   exit(`NAME must be lowercase letters, digits and hyphens: ${name}`)
@@ -76,15 +79,44 @@ function ensureProject(project) {
   }
 }
 
-console.log(`\nProjects:\n  ${appOrigin}\n  ${previewOrigin}\n`)
+/**
+ * The origins a project actually answers on — its assigned subdomain plus
+ * any custom domain. Never inferred from the project's name.
+ */
+function projectOrigins(project) {
+  let rows
+  try {
+    rows = JSON.parse(run(['pages', 'project', 'list', '--json'], { stdio: ['pipe', 'pipe', 'pipe'] }))
+  } catch (error) {
+    exit(`could not list Pages projects: ${error.message}`)
+  }
+
+  const row = rows.find((entry) => entry['Project Name'] === project)
+  if (!row) exit(`Cloudflare has no project called "${project}" after creating it`)
+
+  const domains = String(row['Project Domains'] ?? '')
+    .split(',')
+    .map((domain) => domain.trim())
+    .filter(Boolean)
+
+  if (domains.length === 0) exit(`the project "${project}" has no domain yet`)
+  return domains.map((domain) => (domain.startsWith('http') ? domain : `https://${domain}`))
+}
+
 ensureProject(appProject)
 ensureProject(previewProject)
+
+const appOrigins = projectOrigins(appProject)
+const [previewOrigin] = projectOrigins(previewProject)
+const appOrigin = appOrigins[0]
+
+console.log(`\nServing on:\n  ${appOrigins.join('\n  ')}\n  ${previewOrigin} (preview)\n`)
 
 console.log('\nBuilding both origins…')
 execFileSync('npm', ['run', 'build:web'], {
   cwd: root,
   stdio: 'inherit',
-  env: { ...process.env, APP_ORIGIN: appOrigin, PREVIEW_ORIGIN: previewOrigin },
+  env: { ...process.env, APP_ORIGIN: appOrigins.join(' '), PREVIEW_ORIGIN: previewOrigin },
 })
 
 // The preview goes up first. If the app went first it would be live and
