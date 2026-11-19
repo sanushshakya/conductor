@@ -2,6 +2,11 @@
 
 **Zero to developer, in the age of AI agents.**
 
+### [Try it → course-coding.pages.dev](https://course-coding.pages.dev)
+
+No account, nothing to install. Real Python and a real SQL database, both
+running in your browser.
+
 > A conductor cannot play every instrument, but cannot conduct without reading
 > every score.
 
