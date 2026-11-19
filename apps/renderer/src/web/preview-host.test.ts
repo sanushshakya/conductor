@@ -42,3 +42,35 @@ test('previewUrl points at the sandbox document', () => {
   withLocation('http:', 'localhost', '5178')
   expect(previewUrl()).toBe('http://127.0.0.1:5178/preview.html')
 })
+
+/**
+ * On a static host there is no second hostname for free: `localhost` and
+ * `127.0.0.1` are a development convenience, and a deployed site has exactly
+ * the one origin it was served from. The origin for the preview is therefore
+ * a build-time decision, and when it was not made the app must say the web
+ * track is unavailable rather than render into its own origin.
+ */
+test('a deployed build uses the preview origin it was built with', () => {
+  withLocation('https:', 'conductor.example', '')
+  expect(previewOrigin('https://preview.conductor.example')).toBe(
+    'https://preview.conductor.example',
+  )
+})
+
+test('a deployed build with no preview origin has none', () => {
+  withLocation('https:', 'conductor.example', '')
+  expect(previewOrigin(undefined)).toBeNull()
+  expect(previewUrl(undefined)).toBeNull()
+})
+
+test('a configured origin equal to the app origin is refused', () => {
+  // Same origin means the learner's JavaScript can reach parent.conductor.
+  // A misconfigured deploy must lose the web track, not its isolation.
+  withLocation('https:', 'conductor.example', '')
+  expect(previewOrigin('https://conductor.example')).toBeNull()
+})
+
+test('development still works without any configured origin', () => {
+  withLocation('http:', 'localhost', '5178')
+  expect(previewOrigin(undefined)).toBe('http://127.0.0.1:5178')
+})

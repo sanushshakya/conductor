@@ -52,6 +52,14 @@ export interface ApiGradeRequest {
 export interface ApiGradeReply {
   checks: CheckResult[]
   reachable: boolean
+  /**
+   * Set when this build cannot contact a server at all, as opposed to
+   * trying and finding nothing there. A page served from a website cannot
+   * reach a server running on the visitor's machine, whatever else is
+   * working — so the learner needs to be told that, not sent to debug a
+   * Python engine that is running perfectly well.
+   */
+  unsupported?: boolean
 }
 
 /** Exactly what is exposed on `window.conductor`. Nothing else reaches main. */

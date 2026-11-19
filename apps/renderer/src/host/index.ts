@@ -93,7 +93,8 @@ export function createBrowserHost(): ConductorApi {
       }
     },
 
-    gradeApi: async () => ({ reachable: false, checks: [] }),
+    // Not a failure to reach a server — no server is reachable from here.
+    gradeApi: async () => ({ reachable: false, checks: [], unsupported: true }),
     openExternal: async (url) => {
       window.open(url, '_blank', 'noopener,noreferrer')
     },

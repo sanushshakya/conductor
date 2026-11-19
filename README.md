@@ -52,11 +52,31 @@ npm run dev
 
 | Command | What it does |
 |---|---|
-| `npm run dev` | Launch the app with hot reload |
+| `npm run dev` | Launch the desktop app with hot reload |
+| `npm run dev:web` | Run the whole course in a browser — no Electron needed |
 | `npm test` | Vitest unit suite |
 | `npm run harness` | Validate all curriculum content and run every reference solution |
 | `npm run lint` | Typecheck every workspace |
 | `npm run build` | Package the desktop app |
+| `npm run build:web` | Build the static site — see [docs/deploying.md](docs/deploying.md) |
+
+## Shipping it
+
+Conductor runs as a static site as well as a desktop app: real Python (via
+Pyodide) and a real SQL database (via sql.js) both run in the browser, so
+there is nothing to install and nothing to sign.
+
+```bash
+APP_ORIGIN=https://conductor.example \
+PREVIEW_ORIGIN=https://preview.conductor.example \
+npm run build:web
+```
+
+The two output directories go to two different origins — the learner's own
+web code has to run somewhere it cannot reach the app, and a sandboxed
+iframe is not enough, because an opaque origin inherits the embedder's CSP.
+[docs/deploying.md](docs/deploying.md) explains it, and what a one-origin
+deployment loses.
 
 ## Layout
 

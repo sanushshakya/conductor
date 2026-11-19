@@ -22,10 +22,16 @@
       `connect-src 'none'` is deliberate: a lesson never needs the network, and
       a beginner cannot audit what the code an agent wrote for them reaches out
       to. Track 2's fetch lesson is served data by the parent instead.
+
+      `frame-ancestors` is NOT here, and must not be added: browsers ignore
+      that directive inside a meta tag, so writing it here would advertise a
+      restriction that does not exist. It is sent as a response header
+      instead — by the main process for `preview://`, and by the host's
+      header configuration (`_headers`, `vercel.json`) for a static deploy.
     -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval'; style-src 'unsafe-inline'; img-src data:; font-src data:; connect-src 'none'; form-action 'none'; base-uri 'none'; frame-ancestors 'self' app://-;"
+      content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval'; style-src 'unsafe-inline'; img-src data:; font-src data:; connect-src 'none'; form-action 'none'; base-uri 'none';"
     />
     <title>Preview</title>
     <style>

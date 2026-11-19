@@ -14,7 +14,7 @@ export default defineConfig({
   test: {
     setupFiles: ['./vitest.setup.ts'],
     globals: true,
-    include: ['{packages,apps,harness}/**/*.{test,spec}.{ts,tsx}'],
+    include: ['{packages,apps,harness,scripts}/**/*.{test,spec}.{ts,tsx,mts,mjs}'],
     exclude: ['**/node_modules/**', '**/dist/**', '**/out/**'],
     environmentMatchGlobs: [
       ['**/*.tsx', 'jsdom'],

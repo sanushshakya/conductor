@@ -49,21 +49,59 @@ export interface PreviewResult {
 
 const RESPONSE_TIMEOUT_MS = 8000
 
-/** Where the preview document lives, which must not be the app's own origin. */
-export function previewOrigin(): string {
+/**
+ * The origin a deployed build was told to put the preview on.
+ *
+ * Written as the exact literal the bundler looks for. A build that fails to
+ * substitute it does not fail — the value becomes undefined and the app
+ * quietly falls back to its development guess, serving the preview from the
+ * wrong place. No test can see that, so build-web.mjs checks the built
+ * bundle for the origin it passed in.
+ */
+export const CONFIGURED_PREVIEW_ORIGIN: string | undefined =
+  import.meta.env.VITE_PREVIEW_ORIGIN || undefined
+
+/** True for a host that hands out a second origin without being configured. */
+function isDevelopmentHost(hostname: string): boolean {
+  return hostname === 'localhost' || hostname === '127.0.0.1'
+}
+
+/**
+ * Where the preview document lives, which must not be the app's own origin.
+ *
+ * Returns null when this deployment has nowhere safe to put it — a static
+ * site built without VITE_PREVIEW_ORIGIN, or one configured with the app's
+ * own origin. Rendering there anyway would put the learner's JavaScript on
+ * the same origin as the app, where `parent.conductor` is reachable, so the
+ * web track is withdrawn instead and the learner is told.
+ */
+export function previewOrigin(configured = CONFIGURED_PREVIEW_ORIGIN): string | null {
   // The packaged app registers `preview://` in the main process.
   if (window.location.protocol === 'app:') return 'preview://-'
 
+  const appOrigin = `${window.location.protocol}//${window.location.hostname}${
+    window.location.port ? `:${window.location.port}` : ''
+  }`
+
+  if (configured) {
+    const normalised = configured.replace(/\/$/, '')
+    return normalised === appOrigin ? null : normalised
+  }
+
   // Development: the app is reached on one hostname and the preview on the
   // other. Both resolve to this machine; only the browser's notion of origin
-  // differs, which is exactly what is wanted.
+  // differs, which is exactly what is wanted. A real deployment has no such
+  // second name, which is why it must be configured.
+  if (!isDevelopmentHost(window.location.hostname)) return null
+
   const port = window.location.port || '5178'
   const host = window.location.hostname === 'localhost' ? '127.0.0.1' : 'localhost'
   return `http://${host}:${port}`
 }
 
-export function previewUrl(): string {
-  return `${previewOrigin()}/preview.html`
+export function previewUrl(configured = CONFIGURED_PREVIEW_ORIGIN): string | null {
+  const origin = previewOrigin(configured)
+  return origin === null ? null : `${origin}/preview.html`
 }
 
 /** Unguessable, so learner code cannot pre-forge a reply for the next id. */
@@ -84,8 +122,16 @@ export function renderInPreview(
   request: PreviewRequest,
 ): Promise<PreviewResult> {
   const id = newRequestId()
+  // Resolved once, so the origin a message is checked against is the same one
+  // the request was addressed to.
+  const origin = previewOrigin()
 
   return new Promise((resolve, reject) => {
+    if (origin === null) {
+      reject(new Error('the preview is not available in this build'))
+      return
+    }
+
     const target = frame.contentWindow
     if (!target) {
       reject(new Error('the preview is not ready yet'))
@@ -102,7 +148,7 @@ export function renderInPreview(
       // too. Without these two checks it could answer on the grader's behalf —
       // and because the frame is reused across exercises, one pasted listener
       // would forge every result for the rest of the session.
-      if (event.origin !== previewOrigin()) return
+      if (event.origin !== origin) return
       if (event.source !== target) return
 
       const data = event.data as (Partial<PreviewResult> & { source?: string; id?: string }) | null
@@ -120,6 +166,6 @@ export function renderInPreview(
     }
 
     window.addEventListener('message', onMessage)
-    target.postMessage({ source: 'conductor-host', id, ...request }, previewOrigin())
+    target.postMessage({ source: 'conductor-host', id, ...request }, origin)
   })
 }

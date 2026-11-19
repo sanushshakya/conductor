@@ -7,6 +7,7 @@ import {
   type Track,
 } from '@conductor/shared'
 import { host, isDesktop } from './host'
+import { previewOrigin } from './web/preview-host'
 import { warmUpPython, pythonAvailable } from './python/run'
 import { useProfile } from './store/useProfile'
 import { orderedTracks, lessonById, resumeLesson, bossById, bossForTrack } from './content'
@@ -68,7 +69,9 @@ export function App() {
   // blocks nothing — Track 0 is already loaded behind it.
   const showWelcome = loaded && !welcomed && isFirstRun(profile)
 
-  const engines = { pyodide: pyodideReady }
+  // Whether this deployment has a second origin for the learner's web code.
+  // A static build without one loses Tracks 2 and 5, and must say so.
+  const engines = { pyodide: pyodideReady, webPreview: previewOrigin() !== null }
   const caps = capabilities(sidecar, engines)
   const notice = capabilityNotice(sidecar, engines)
   const tracks = orderedTracks()

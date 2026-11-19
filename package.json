@@ -23,10 +23,11 @@
     "lint": "tsc -b",
     "harness": "tsx harness/cli.ts",
     "dev:web": "vite --config vite.web.config.ts",
-    "build:web": "vite build --config vite.web.config.ts",
+    "build:web": "node scripts/build-web.mjs",
     "package": "npm run build && ./scripts/build-sidecar.sh && electron-builder",
     "predev": "node scripts/ensure-electron.mjs",
-    "prebuild": "node scripts/ensure-electron.mjs"
+    "prebuild": "node scripts/ensure-electron.mjs",
+    "postinstall": "node scripts/sync-pyodide.mjs"
   },
   "devDependencies": {
     "@testing-library/dom": "^10.4.2",

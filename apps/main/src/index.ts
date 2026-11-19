@@ -8,6 +8,7 @@ import { CONDUCTOR_NAME, IPC_EVENTS } from '@conductor/shared'
 import { ProfileStore } from './profile-store'
 import { registerHandlers } from './ipc-handlers'
 import { buildNavigationGuard } from './navigation'
+import { APP_SCHEME, PREVIEW_SCHEME, frameAncestorsFor } from './frame-headers'
 import { SidecarSupervisor, type ChildLike } from './sidecar/supervisor'
 import { findPython, provisionVenv, waitForHealth } from './sidecar/provision'
 
@@ -26,8 +27,6 @@ const here = dirname(fileURLToPath(import.meta.url))
  *     the job, because an opaque origin inherits the embedder's CSP and the
  *     learner's inline scripts would be blocked. Two schemes, two origins.
  */
-const APP_SCHEME = 'app'
-const PREVIEW_SCHEME = 'preview'
 
 protocol.registerSchemesAsPrivileged([
   { scheme: APP_SCHEME, privileges: { standard: true, secure: true, supportFetchAPI: true } },
@@ -43,6 +42,21 @@ protocol.registerSchemesAsPrivileged([
  * `index.html` must not be loadable from it.
  */
 const PREVIEW_FILES = new Set(['preview.html'])
+
+/**
+ * Adds the frame-ancestors header, which preview.html's meta CSP cannot
+ * carry — browsers ignore that directive in a meta tag.
+ */
+async function withFrameAncestors(scheme: string, response: Promise<Response>): Promise<Response> {
+  const original = await response
+  const headers = new Headers(original.headers)
+  headers.append('Content-Security-Policy', frameAncestorsFor(scheme))
+  return new Response(original.body, {
+    status: original.status,
+    statusText: original.statusText,
+    headers,
+  })
+}
 
 /** Serves the built renderer over both schemes, from the same directory. */
 function registerRendererProtocols(): void {
@@ -74,7 +88,7 @@ function registerRendererProtocols(): void {
 
     // pathToFileURL, not string concatenation: an install path containing a
     // space, `#` or `%` would otherwise produce a malformed URL.
-    return net.fetch(pathToFileURL(resolved).toString())
+    return withFrameAncestors(scheme, net.fetch(pathToFileURL(resolved).toString()))
   }
 
   protocol.handle(APP_SCHEME, (request) => serve(APP_SCHEME, request))

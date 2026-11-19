@@ -35,6 +35,30 @@ jobs:
       - name: Content harness
         run: npm run harness
 
+      # The web build is how the course is distributed, and most of what can
+      # break it is invisible to the unit tests: a preview origin that does
+      # not reach the bundle, a missing Python runtime, two origins that are
+      # really one. Building both shapes catches all three.
+      - name: Static site builds (two origins)
+        run: |
+          APP_ORIGIN=https://conductor.example \
+          PREVIEW_ORIGIN=https://preview.conductor.example \
+          npm run build:web
+          test -f out/web/app/index.html
+          test -f out/web/preview/preview.html
+          test ! -f out/web/app/preview.html
+          grep -q "frame-ancestors https://conductor.example" out/web/preview/_headers
+
+      - name: Static site builds (no preview origin)
+        run: npm run build:web
+
+      - name: Static site refuses one origin for both
+        run: |
+          if APP_ORIGIN=https://same.example PREVIEW_ORIGIN=https://same.example npm run build:web; then
+            echo "build accepted a shared origin — the learner's code could reach the app"
+            exit 1
+          fi
+
       - name: Install sidecar dependencies
         run: |
           if [ -f services/mentor/requirements.txt ]; then

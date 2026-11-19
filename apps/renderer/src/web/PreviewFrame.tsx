@@ -17,6 +17,9 @@ export const PreviewFrame = forwardRef<PreviewHandle, { title?: string; classNam
   function PreviewFrame({ title = 'Your page', className }, ref) {
     const frame = useRef<HTMLIFrameElement>(null)
     const [ready, setReady] = useState(false)
+    // Null when this deployment has no second origin to render on. See
+    // previewOrigin: the app's own origin is not an option.
+    const url = previewUrl()
     const readyWaiters = useRef<(() => void)[]>([])
 
     useEffect(() => {
@@ -40,6 +43,8 @@ export const PreviewFrame = forwardRef<PreviewHandle, { title?: string; classNam
 
     useImperativeHandle(ref, () => ({
       async render(request) {
+        if (url === null) throw new Error('the preview is not available in this build')
+
         const element = frame.current
         if (!element) throw new Error('the preview is not mounted')
 
@@ -65,6 +70,21 @@ export const PreviewFrame = forwardRef<PreviewHandle, { title?: string; classNam
       },
     }))
 
+    if (url === null) {
+      return (
+        <div className={className}>
+          <div className="mb-1.5 text-xs uppercase tracking-wide text-parchment-400">{title}</div>
+          <p
+            role="status"
+            className="rounded-lg border border-ink-700 bg-ink-800 px-4 py-6 text-sm text-parchment-300"
+          >
+            This version of Conductor cannot show your page running. The web
+            lessons need the desktop app — everything else here works.
+          </p>
+        </div>
+      )
+    }
+
     return (
       <div className={className}>
         <div className="mb-1.5 flex items-center gap-2">
@@ -74,7 +94,7 @@ export const PreviewFrame = forwardRef<PreviewHandle, { title?: string; classNam
         <iframe
           ref={frame}
           title={title}
-          src={previewUrl()}
+          src={url}
           /*
            * `allow-same-origin` here means "keep your OWN origin" — which is
            * the preview origin, not the app's. So the frame stays cross-origin

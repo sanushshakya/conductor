@@ -25,6 +25,18 @@ registerGrader('api-suite', async (submission, config, ctx) => {
   const baseUrl = submission.trim() || 'http://127.0.0.1:8000'
   const reply = (await ctx.host.gradeApi({ baseUrl, suiteId: config.suiteId })) as ApiGradeReply
 
+  if (reply.unsupported) {
+    return {
+      passed: false,
+      checks: [],
+      xpAwarded: 0,
+      unavailableReason:
+        'This project needs the desktop app: it builds a server on your own ' +
+        'machine, and a web page cannot reach one. Everything you learned here ' +
+        'still counts.',
+    }
+  }
+
   if (!reply.reachable && reply.checks.length === 0) {
     return {
       passed: false,
