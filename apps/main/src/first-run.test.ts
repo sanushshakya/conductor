@@ -56,3 +56,32 @@ test('sidecar provisioning is deferred until after the first paint', () => {
   // Python before the window shows would roughly double that.
   expect(firstRunPlan(freshProfile(NOW)).startSidecarAfterFirstPaint).toBe(true)
 })
+
+// ── navigation guard ──────────────────────────────────────────────────────
+
+import { buildNavigationGuard } from './navigation'
+
+test('the dev server URL is allowed with or without a trailing path', () => {
+  const allow = buildNavigationGuard('app', 'http://localhost:5173')
+  expect(allow('http://localhost:5173')).toBe(true)
+  expect(allow('http://localhost:5173/')).toBe(true)
+  expect(allow('http://localhost:5173/index.html')).toBe(true)
+})
+
+test('the packaged app scheme is always allowed', () => {
+  const allow = buildNavigationGuard('app', undefined)
+  expect(allow('app://-/index.html')).toBe(true)
+})
+
+test('anything else is refused, including the preview origin', () => {
+  const allow = buildNavigationGuard('app', 'http://localhost:5173')
+  expect(allow('https://example.com')).toBe(false)
+  expect(allow('http://127.0.0.1:5173/preview.html')).toBe(false)
+  expect(allow('file:///etc/passwd')).toBe(false)
+  expect(allow('not a url')).toBe(false)
+})
+
+test('with no dev server configured, only the app scheme passes', () => {
+  const allow = buildNavigationGuard('app', undefined)
+  expect(allow('http://localhost:5173/')).toBe(false)
+})

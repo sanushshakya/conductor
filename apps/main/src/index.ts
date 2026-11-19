@@ -7,6 +7,7 @@ import { readdirSync, existsSync } from 'node:fs'
 import { CONDUCTOR_NAME, IPC_EVENTS } from '@conductor/shared'
 import { ProfileStore } from './profile-store'
 import { registerHandlers } from './ipc-handlers'
+import { buildNavigationGuard } from './navigation'
 import { SidecarSupervisor, type ChildLike } from './sidecar/supervisor'
 import { findPython, provisionVenv, waitForHealth } from './sidecar/provision'
 
@@ -147,8 +148,7 @@ function createWindow(): BrowserWindow {
   // And nothing may navigate the app window itself away. The window has no
   // address bar and no reload control, so a page that replaced it would have
   // nowhere to go back to — and the web track runs code the learner pasted in.
-  const allowDestination = (url: string) =>
-    url.startsWith(`${APP_SCHEME}://`) || url === process.env['ELECTRON_RENDERER_URL']
+  const allowDestination = buildNavigationGuard(APP_SCHEME, process.env['ELECTRON_RENDERER_URL'])
 
   window.webContents.on('will-navigate', (event, url) => {
     if (allowDestination(url)) return

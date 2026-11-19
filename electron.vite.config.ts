@@ -33,6 +33,16 @@ export default defineConfig({
   renderer: {
     root: resolve(__dirname, 'apps/renderer'),
     plugins: [react(), conductorContent(resolve(__dirname, 'content'))],
+    server: {
+      // Bound on both interfaces so the preview frame can be served from a
+      // DIFFERENT origin to the app (127.0.0.1 against localhost). Without
+      // this, every web exercise in `npm run dev` fails with "the preview
+      // could not be reached" — Vite binds `localhost` only by default, and
+      // Node resolves that to ::1, so 127.0.0.1 answers nothing.
+      host: true,
+      cors: false,
+      fs: { strict: true, allow: [__dirname] },
+    },
     resolve: {
       alias: {
         '@conductor/shared': shared,
