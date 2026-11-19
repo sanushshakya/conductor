@@ -193,12 +193,22 @@ lessons:
           grader:
             kind: html-structure
             expect:
-              - selector: h1
-                label: The heading is still there
-                text: Ward B
               - selector: .urgent
                 label: The urgent patient is still marked
                 text: Cal Magar
+            styles:
+              - selector: h1
+                property: color
+                one_of: ["rgb(185, 28, 28)", "#b91c1c"]
+                label: The heading is the right red
+              - selector: .urgent
+                property: background-color
+                one_of: ["rgb(254, 226, 226)", "#fee2e2"]
+                label: The urgent patient has a background
+              - selector: .urgent
+                property: padding-top
+                one_of: ["8px"]
+                label: The urgent patient has 8px of padding
             forbid:
               - selector: "[style]"
                 label: Styling lives in CSS, not in a style attribute
@@ -293,12 +303,22 @@ lessons:
           grader:
             kind: html-structure
             expect:
-              - selector: .bar h1
-                label: The heading is inside the bar
-                text: Ward B
               - selector: .bar .count
                 label: The count is inside the bar
-                textContains: "3 patients"
+                text_contains: "3 patients"
+            styles:
+              - selector: .bar
+                property: display
+                one_of: ["flex"]
+                label: The bar is a flex container
+              - selector: .bar
+                property: justify-content
+                one_of: ["space-between"]
+                label: The two ends are pushed apart
+              - selector: .bar
+                property: align-items
+                one_of: ["center"]
+                label: They are vertically centred
 
       - kind: prose
         body: |
@@ -386,7 +406,7 @@ lessons:
             { name: "Cal", severity: 5 },
           ];
 
-          console.log(patients.length);
+          // Write your loop below.
         exercise:
           id: web-js-basics
           prompt: |

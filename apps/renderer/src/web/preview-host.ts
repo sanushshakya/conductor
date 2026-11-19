@@ -28,6 +28,8 @@ export interface PreviewRequest {
   js?: string
   /** Milliseconds to let the page settle before snapshotting. */
   settleMs?: number
+  /** Computed styles to read back; innerHTML carries no styling. */
+  measureStyles?: { selector: string; property: string }[]
 }
 
 export interface PreviewResult {
@@ -39,6 +41,10 @@ export interface PreviewResult {
   html: string
   /** `document.body.innerText` — what a person would actually read. */
   text: string
+  /** Computed values for whatever `measureStyles` asked about. */
+  styles: { selector: string; property: string; value: string | null }[]
+  /** Current values of every form field, which innerHTML never reflects. */
+  values: { id: string | null; name: string | null; value: string }[]
 }
 
 const RESPONSE_TIMEOUT_MS = 8000
@@ -60,7 +66,11 @@ export function previewUrl(): string {
   return `${previewOrigin()}/preview.html`
 }
 
-let nextId = 0
+/** Unguessable, so learner code cannot pre-forge a reply for the next id. */
+function newRequestId(): string {
+  const random = globalThis.crypto?.randomUUID?.()
+  return `preview-${random ?? Math.random().toString(36).slice(2)}-${Date.now()}`
+}
 
 /**
  * Renders `request` in `frame` and resolves with what happened.
@@ -73,7 +83,7 @@ export function renderInPreview(
   frame: HTMLIFrameElement,
   request: PreviewRequest,
 ): Promise<PreviewResult> {
-  const id = `preview-${(nextId += 1)}`
+  const id = newRequestId()
 
   return new Promise((resolve, reject) => {
     const target = frame.contentWindow
@@ -88,7 +98,14 @@ export function renderInPreview(
     }, RESPONSE_TIMEOUT_MS)
 
     function onMessage(event: MessageEvent) {
-      const data = event.data as (PreviewResult & { source?: string; id?: string }) | null
+      // The learner's own code runs inside this frame and can post messages
+      // too. Without these two checks it could answer on the grader's behalf —
+      // and because the frame is reused across exercises, one pasted listener
+      // would forge every result for the rest of the session.
+      if (event.origin !== previewOrigin()) return
+      if (event.source !== target) return
+
+      const data = event.data as (Partial<PreviewResult> & { source?: string; id?: string }) | null
       if (!data || data.source !== 'conductor-preview' || data.id !== id) return
       clearTimeout(timer)
       window.removeEventListener('message', onMessage)
@@ -97,10 +114,12 @@ export function renderInPreview(
         errors: data.errors ?? [],
         html: data.html ?? '',
         text: data.text ?? '',
+        styles: data.styles ?? [],
+        values: data.values ?? [],
       })
     }
 
     window.addEventListener('message', onMessage)
-    target.postMessage({ source: 'conductor-host', id, ...request }, '*')
+    target.postMessage({ source: 'conductor-host', id, ...request }, previewOrigin())
   })
 }

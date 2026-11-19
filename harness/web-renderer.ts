@@ -18,6 +18,8 @@ export interface WebRenderResult {
   errors: string[]
   html: string
   text: string
+  styles: { selector: string; property: string; value: string | null }[]
+  values: { id: string | null; name: string | null; value: string }[]
 }
 
 const RENDER_TIMEOUT_MS = 5000
@@ -28,6 +30,7 @@ export function createWebRenderer() {
     css?: string
     js?: string
     settleMs?: number
+    measureStyles?: { selector: string; property: string }[]
   }): Promise<WebRenderResult> {
     const logs: string[] = []
     const errors: string[] = []
@@ -56,21 +59,56 @@ export function createWebRenderer() {
         const script = dom.window.document.createElement('script')
         script.textContent = request.js
         dom.window.document.body.appendChild(script)
+
+        // Matches the preview frame: both events have already fired, so code
+        // wrapped in a listener for them would otherwise never run.
+        dom.window.document.dispatchEvent(
+          new dom.window.Event('DOMContentLoaded', { bubbles: true }),
+        )
+        dom.window.dispatchEvent(new dom.window.Event('load'))
       }
 
       if (request.settleMs) {
         await new Promise((resolve) => setTimeout(resolve, Math.min(request.settleMs!, 200)))
       }
 
+      const styles = (request.measureStyles ?? []).map(({ selector, property }) => {
+        const element = dom.window.document.querySelector(selector)
+        return {
+          selector,
+          property,
+          value: element
+            ? dom.window.getComputedStyle(element).getPropertyValue(property).trim()
+            : null,
+        }
+      })
+
+      const values = Array.from(
+        dom.window.document.querySelectorAll('input, textarea, select'),
+      ).map((field) => ({
+        id: (field as HTMLInputElement).id || null,
+        name: field.getAttribute('name'),
+        value: (field as HTMLInputElement).value,
+      }))
+
       return {
         logs,
         errors,
         html: dom.window.document.body.innerHTML,
         text: dom.window.document.body.textContent ?? '',
+        styles,
+        values,
       }
     } catch (error) {
       errors.push((error as Error).message)
-      return { logs, errors, html: dom.window.document.body.innerHTML, text: '' }
+      return {
+        logs,
+        errors,
+        html: dom.window.document.body.innerHTML,
+        text: '',
+        styles: [],
+        values: [],
+      }
     } finally {
       dom.window.close()
     }

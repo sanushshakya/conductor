@@ -121,6 +121,7 @@ export function BossPlayer({ boss, onFinished }: { boss: Boss; onFinished?(): vo
                   <ExercisePanel
                     beat={{ kind: 'prose', body: '' }}
                     exercise={criterion.exercise}
+                    web={criterion.web}
                     satisfied={passed}
                     onSatisfied={() => {}}
                     onExerciseGraded={(id, result) => void handleGraded(id, result)}

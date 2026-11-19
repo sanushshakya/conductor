@@ -211,6 +211,26 @@ const HtmlStructureGraderSchema = z
       .min(1),
     /** Selectors that must NOT match — e.g. forbidding a hardcoded answer. */
     forbid: z.array(z.object({ selector: z.string(), label: z.string() }).strict()).optional(),
+    /**
+     * Computed styles the page must end up with.
+     *
+     * Rendered markup carries no styling, so without this a CSS exercise is
+     * graded entirely on the HTML it was given — and passes with the CSS
+     * editor left empty.
+     */
+    styles: z
+      .array(
+        z
+          .object({
+            selector: z.string().min(1),
+            property: z.string().min(1),
+            /** Accepted computed values; browsers normalise colours to rgb(). */
+            oneOf: z.array(z.string().min(1)).min(1),
+            label: z.string().min(1),
+          })
+          .strict(),
+      )
+      .optional(),
   })
   .strict()
 
@@ -249,6 +269,12 @@ const DomBehaviourGraderSchema = z
             expectText: z.string().optional(),
             expectTextContains: z.string().optional(),
             expectCount: z.number().int().nonnegative().optional(),
+            /**
+             * A form field's `value`. Needed because an input's textContent is
+             * always empty however much was typed, so asserting text against
+             * one silently passes whatever the learner did.
+             */
+            expectValue: z.string().optional(),
           })
           .strict(),
       )
@@ -519,6 +545,8 @@ export const DUEL_BUG_KINDS = [
   'identity-vs-equality',
   'inverted-condition',
   'shadowed-variable',
+  'called-not-passed',
+  'mutated-state',
 ] as const
 
 /**

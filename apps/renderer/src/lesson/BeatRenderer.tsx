@@ -134,8 +134,25 @@ export function ExercisePanel({
   exercise,
   intro,
   language,
+  web,
   ...props
-}: BeatProps & { exercise: Exercise; intro?: string; language?: 'python' | 'javascript' }) {
+}: BeatProps & {
+  exercise: Exercise
+  intro?: string
+  language?: 'python' | 'javascript'
+  /**
+   * Editors and starters for a web exercise. Boss criteria carry this in
+   * exactly the same shape a `web` beat does — without it, a boss would show
+   * three empty editors and its grader would check markup the learner was
+   * never given.
+   */
+  web?: {
+    editors?: readonly ('html' | 'css' | 'js')[]
+    starterHtml?: string
+    starterCss?: string
+    starterJs?: string
+  }
+}) {
   const kind = exercise.grader.kind
 
   if (kind === 'quiz') return <QuizBeat exercise={exercise} {...props} />
@@ -148,10 +165,10 @@ export function ExercisePanel({
       <WebExerciseBeat
         exercise={exercise}
         intro={intro}
-        editors={['html', 'css', 'js']}
-        starterHtml={exercise.starter ?? ''}
-        starterCss=""
-        starterJs=""
+        editors={web?.editors ?? ['html', 'css', 'js']}
+        starterHtml={web?.starterHtml ?? (web ? '' : (exercise.starter ?? ''))}
+        starterCss={web?.starterCss ?? ''}
+        starterJs={web?.starterJs ?? ''}
         {...props}
       />
     )

@@ -226,3 +226,119 @@ test('web graders report unchecked when no renderer is available', async () => {
   expect(r.checks).toEqual([])
   expect(r.unavailableReason).toBeTruthy()
 })
+
+// ── the two loopholes the review found ────────────────────────────────────
+
+test('a CSS exercise FAILS with the CSS editor left empty', async () => {
+  // Rendered markup carries no styling, so a selector-only grader passed
+  // whatever the starter HTML already contained — a learner could clear both
+  // CSS lessons without writing a single declaration.
+  const config: GraderConfig = {
+    kind: 'html-structure',
+    expect: [{ selector: 'h1', label: 'The heading is there', text: 'Ward B' }],
+    styles: [
+      { selector: 'h1', property: 'color', oneOf: ['rgb(185, 28, 28)'], label: 'The heading is red' },
+    ],
+  }
+
+  const empty = await run(web({ html: '<h1>Ward B</h1>', css: '' }), config)
+  expect(empty.passed).toBe(false)
+  // The message names both what was wanted and what the page actually has,
+  // which is what tells the learner the CSS never took effect.
+  expect(empty.checks.find((c) => c.id === 'style-0')!.detail).toMatch(/Expected color to be/)
+
+  const styled = await run(
+    web({ html: '<h1>Ward B</h1>', css: 'h1 { color: #b91c1c }' }),
+    config,
+  )
+  expect(styled.passed).toBe(true)
+})
+
+test('a style assertion accepts any spelling the browser normalises to', async () => {
+  const r = await run(web({ html: '<p class="n">x</p>', css: '.n { color: red }' }), {
+    kind: 'html-structure',
+    expect: [{ selector: '.n', label: 'exists' }],
+    styles: [
+      { selector: '.n', property: 'color', oneOf: ['rgb(255, 0, 0)', 'red'], label: 'is red' },
+    ],
+  })
+  expect(r.passed).toBe(true)
+})
+
+test("a field's value is checked against its value, not its textContent", async () => {
+  // An input's textContent is always '', so `expect_text: ""` passed whether
+  // or not the learner cleared the field — which is the one thing that
+  // criterion existed to check.
+  const config: GraderConfig = {
+    kind: 'dom-behaviour',
+    html: '<input id="name"><button id="add">Add</button><ul id="list"></ul>',
+    steps: [
+      {
+        label: 'The field is cleared after adding',
+        type: { selector: '#name', value: 'Cal' },
+        click: '#add',
+        expectSelector: '#name',
+        expectValue: '',
+      },
+    ],
+  }
+
+  const doesNotClear = await run(
+    web({
+      js: `document.getElementById('add').addEventListener('click', function(){
+             const li = document.createElement('li')
+             li.textContent = document.getElementById('name').value
+             document.getElementById('list').appendChild(li)
+           })`,
+    }),
+    config,
+  )
+  expect(doesNotClear.passed).toBe(false)
+  expect(doesNotClear.checks[0]!.detail).toMatch(/found "Cal"/)
+
+  const clears = await run(
+    web({
+      js: `document.getElementById('add').addEventListener('click', function(){
+             const li = document.createElement('li')
+             li.textContent = document.getElementById('name').value
+             document.getElementById('list').appendChild(li)
+             document.getElementById('name').value = ''
+           })`,
+    }),
+    config,
+  )
+  expect(clears.passed).toBe(true)
+})
+
+test('code wrapped in DOMContentLoaded still runs', async () => {
+  // Both events have already fired by the time the learner's code is
+  // evaluated, so without a synthetic dispatch this wrapper — which is what
+  // most tutorials and most agents produce — would silently never run.
+  const r = await run(
+    web({
+      html: '<ul id="board"></ul>',
+      js: `document.addEventListener('DOMContentLoaded', function () {
+             const li = document.createElement('li')
+             li.textContent = 'Ana'
+             document.getElementById('board').appendChild(li)
+           })`,
+    }),
+    { kind: 'html-structure', expect: [{ selector: '#board li', label: 'One patient', count: 1 }] },
+  )
+  expect(r.passed).toBe(true)
+})
+
+test('code wrapped in window.onload still runs', async () => {
+  const r = await run(
+    web({
+      html: '<ul id="board"></ul>',
+      js: `window.addEventListener('load', function () {
+             const li = document.createElement('li')
+             li.textContent = 'Ana'
+             document.getElementById('board').appendChild(li)
+           })`,
+    }),
+    { kind: 'html-structure', expect: [{ selector: '#board li', label: 'One patient', count: 1 }] },
+  )
+  expect(r.passed).toBe(true)
+})

@@ -345,7 +345,7 @@ duels:
       }
 
       button.addEventListener("click", announce());
-    bug_kind: missing-await
+    bug_kind: called-not-passed
     bug_line: 8
     explanation: |
       `announce()` with parentheses **calls the function immediately** and
@@ -384,7 +384,7 @@ duels:
 
         return <PatientList patients={patients} />;
       }
-    bug_kind: shadowed-variable
+    bug_kind: mutated-state
     bug_line: 5
     explanation: |
       `push` adds to the array React is already holding, so `setPatients` is

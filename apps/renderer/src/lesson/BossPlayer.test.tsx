@@ -105,3 +105,50 @@ test('criteria can be collapsed and reopened', async () => {
   await userEvent.click(header)
   expect(header).toHaveAttribute('aria-expanded', 'false')
 })
+
+test('a boss web criterion gets the editors and starters it declared', async () => {
+  // The schema, the harness and the grader all honour `criterion.web`. The UI
+  // ignoring it made two whole boss projects impossible to complete, because
+  // the learner saw empty editors and the grader checked markup they were
+  // never shown.
+  const webBoss: Boss = {
+    id: 'web-boss',
+    track: 'web',
+    title: 'Boss: A web project',
+    brief: 'One criterion.',
+    estimateMinutes: 10,
+    criteria: [
+      {
+        id: 'only',
+        label: 'Builds the list',
+        web: {
+          editors: ['html', 'js'],
+          starterHtml: '<ul id="board"></ul>',
+          starterJs: '// write your loop here',
+        },
+        exercise: {
+          id: 'web-boss-ex',
+          prompt: 'Add one item.',
+          solution: 'document.querySelector("#board").innerHTML = "<li>Ana</li>"',
+          hints: ['a', 'b', 'c'],
+          grader: {
+            kind: 'html-structure',
+            expect: [{ selector: '#board li', label: 'One item', count: 1 }],
+          },
+        },
+      },
+    ],
+  }
+
+  render(<BossPlayer boss={webBoss} />)
+
+  // Both declared editors are present…
+  expect(screen.getByRole('button', { name: 'HTML' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'JavaScript' })).toBeInTheDocument()
+
+  // …and the HTML editor holds the starter the criterion supplied, not the
+  // exercise's (absent) one.
+  expect(screen.getByRole('textbox', { name: /HTML editor/i })).toHaveValue(
+    '<ul id="board"></ul>',
+  )
+})

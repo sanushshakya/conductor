@@ -5,13 +5,19 @@
     <!--
       The sandbox the learner's web code runs in.
 
-      This is a SEPARATE DOCUMENT, loaded into an iframe, and that is the whole
-      trick: Content Security Policy is per-document. The app itself runs under
-      a strict `script-src 'self'`, which would block every inline <script> a
-      learner writes. This page declares its own policy instead, so their code
-      runs — while the iframe that holds it is sandboxed WITHOUT
-      allow-same-origin, giving it an opaque origin with no access to the app,
-      its storage, or its IPC bridge.
+      This is a SEPARATE DOCUMENT on a SEPARATE ORIGIN, and both halves matter.
+
+      Separate document, because Content Security Policy is per-document: the
+      app runs under a strict `script-src 'self'` that would block every inline
+      <script> a learner writes, and this page declares its own policy instead.
+
+      Separate origin, because that is what keeps the learner's code away from
+      the app — `parent.conductor` (the IPC bridge), its storage and its DOM
+      are all unreachable across an origin boundary. The frame is additionally
+      sandboxed with `allow-scripts allow-same-origin`; `allow-same-origin`
+      means "keep your own origin", NOT the parent's, so the boundary stands
+      while the remaining sandbox flags still withhold top-level navigation,
+      popups and modal dialogs.
 
       `connect-src 'none'` is deliberate: a lesson never needs the network, and
       a beginner cannot audit what the code an agent wrote for them reaches out
@@ -19,7 +25,7 @@
     -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval'; style-src 'unsafe-inline'; img-src data:; font-src data:; connect-src 'none'; form-action 'none'; base-uri 'none';"
+      content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval'; style-src 'unsafe-inline'; img-src data:; font-src data:; connect-src 'none'; form-action 'none'; base-uri 'none'; frame-ancestors 'self' app://-;"
     />
     <title>Preview</title>
     <style>
@@ -57,6 +63,40 @@
           }
         }
 
+        /**
+         * Reads back computed styles and field values.
+         *
+         * `innerHTML` carries neither, so a grader that only sees markup
+         * cannot tell whether any CSS was written at all, and reads an
+         * <input>'s textContent as '' however much was typed into it.
+         */
+        function measure(request) {
+          var styles = []
+          var values = []
+
+          var wanted = request.measureStyles || []
+          for (var i = 0; i < wanted.length; i++) {
+            var spec = wanted[i]
+            var element = document.querySelector(spec.selector)
+            styles.push({
+              selector: spec.selector,
+              property: spec.property,
+              value: element ? getComputedStyle(element).getPropertyValue(spec.property).trim() : null,
+            })
+          }
+
+          var fields = document.querySelectorAll('input, textarea, select')
+          for (var j = 0; j < fields.length; j++) {
+            values.push({
+              id: fields[j].id || null,
+              name: fields[j].getAttribute('name'),
+              value: fields[j].value,
+            })
+          }
+
+          return { styles: styles, values: values }
+        }
+
         function run(request) {
           var logs = []
           var errors = []
@@ -82,11 +122,18 @@
             return true
           }
 
-          // A fresh document each run, so one attempt cannot see the last.
+          // A genuinely fresh document each run. The previous run's <style>
+          // has to go explicitly, or deleting a CSS rule and re-running leaves
+          // the old rule applied — which lands in exactly the two lessons
+          // whose loop is type-CSS, run, look, adjust.
+          var previous = document.head.querySelectorAll('style[data-learner]')
+          for (var i = 0; i < previous.length; i++) previous[i].remove()
+
           document.body.innerHTML = request.html || ''
 
           if (request.css) {
             var style = document.createElement('style')
+            style.setAttribute('data-learner', '')
             style.textContent = request.css
             document.head.appendChild(style)
           }
@@ -97,6 +144,14 @@
               // tag does — so `const` and function declarations behave the way
               // the learner expects from a real page.
               ;(0, eval)(request.js)
+
+              // Both events have already fired on this document, so code
+              // wrapped in a DOMContentLoaded or load listener would never
+              // run. That wrapper is what nearly every tutorial — and nearly
+              // every agent — produces, and a learner whose correct answer is
+              // rejected for it has no way to discover why.
+              document.dispatchEvent(new Event('DOMContentLoaded', { bubbles: true }))
+              window.dispatchEvent(new Event('load'))
             } catch (error) {
               errors.push(String((error && error.message) || error))
             }
@@ -105,7 +160,7 @@
           return { logs: logs, errors: errors }
         }
 
-        function report(id, payload) {
+        function report(id, payload, origin) {
           parent.postMessage(
             {
               source: 'conductor-preview',
@@ -115,25 +170,38 @@
               // The rendered result, for the parent to assert against.
               html: document.body.innerHTML,
               text: document.body.innerText || '',
+              styles: payload.styles || [],
+              values: payload.values || [],
             },
-            '*',
+            // Addressed to the embedder that asked, never broadcast.
+            origin,
           )
         }
 
         window.addEventListener('message', function (event) {
+          // Only the embedder may drive this page. Without the source check,
+          // any site that framed it — or the learner's own code, which runs
+          // right here — could ask it to execute whatever it liked.
+          if (event.source !== window.parent) return
+
           var request = event.data
           if (!request || request.source !== 'conductor-host') return
 
           var outcome
           try {
             outcome = run(request)
+            var measured = measure(request)
+            outcome.styles = measured.styles
+            outcome.values = measured.values
           } catch (error) {
             outcome = { logs: [], errors: [String((error && error.message) || error)] }
           }
 
+          var replyTo = event.origin && event.origin !== 'null' ? event.origin : '*'
+
           // A microtask gap lets synchronous DOM work settle before we snapshot.
           setTimeout(function () {
-            report(request.id, outcome)
+            report(request.id, outcome, replyTo)
           }, request.settleMs || 0)
         })
 

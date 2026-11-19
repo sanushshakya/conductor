@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import type { AtlasTool } from '@conductor/shared'
 import { layoutAtlas, CATEGORY_LABEL, type AtlasCategory } from './atlas-layout'
 import { registerVisualizer, type VisualizerProps } from '../visualizers/registry'
-import { atlas as allTools } from '../content'
+import { atlas as allTools, orderedTracks } from '../content'
 import { useProfile } from '../store/useProfile'
 
 const VERDICT_STYLE: Record<AtlasTool['verdict'], string> = {
@@ -43,7 +43,16 @@ function ToolAtlas({ config }: VisualizerProps) {
   const layout = useMemo(() => layoutAtlas(visible), [visible])
 
   const learnNow = tools.filter((t) => t.verdict === 'learn-now')
-  const covered = learnNow.filter((t) => t.lessonId && completed.includes(t.lessonId))
+
+  // Some essentials are keyed to a whole track rather than one lesson —
+  // Python, SQL, FastAPI, HTML & CSS. Counting only lesson-keyed tools meant
+  // the tally stuck at 15/19 even for somebody who finished everything.
+  const covered = learnNow.filter((tool) => {
+    if (tool.lessonId) return completed.includes(tool.lessonId)
+    if (!tool.trackId) return false
+    const track = orderedTracks().find((t) => t.track === tool.trackId)
+    return Boolean(track) && track!.lessons.every((lesson) => completed.includes(lesson.id))
+  })
 
   return (
     <div className="rounded-xl border border-ink-700 bg-ink-850 p-4">

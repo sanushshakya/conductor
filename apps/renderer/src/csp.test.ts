@@ -50,7 +50,7 @@ test('the CSP permits the preview origin to be framed, and only that', () => {
   // separation is what stops it reaching the IPC bridge. Only those two
   // origins may be framed.
   for (const source of frameSrc) {
-    expect(['http://127.0.0.1:*', 'preview://-']).toContain(source)
+    expect(['http://127.0.0.1:*', 'http://localhost:*', 'preview://-']).toContain(source)
   }
 })
 

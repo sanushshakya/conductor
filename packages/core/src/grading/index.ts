@@ -29,7 +29,15 @@ export interface GradeContext {
     css?: string
     js?: string
     settleMs?: number
-  }) => Promise<{ logs: string[]; errors: string[]; html: string; text: string }>
+    measureStyles?: { selector: string; property: string }[]
+  }) => Promise<{
+    logs: string[]
+    errors: string[]
+    html: string
+    text: string
+    styles?: { selector: string; property: string; value: string | null }[]
+    values?: { id: string | null; name: string | null; value: string }[]
+  }>
 
   /**
    * Parses rendered HTML into a queryable document.

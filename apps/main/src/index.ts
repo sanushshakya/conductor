@@ -1,6 +1,7 @@
 import { app, BrowserWindow, ipcMain, net, protocol, shell } from 'electron'
 import { spawn } from 'node:child_process'
-import { join, dirname } from 'node:path'
+import { join, dirname, resolve, sep } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { fileURLToPath } from 'node:url'
 import { readdirSync, existsSync } from 'node:fs'
 import { CONDUCTOR_NAME, IPC_EVENTS } from '@conductor/shared'
@@ -32,23 +33,51 @@ protocol.registerSchemesAsPrivileged([
   { scheme: PREVIEW_SCHEME, privileges: { standard: true, secure: true } },
 ])
 
+/**
+ * Files the preview origin is allowed to serve.
+ *
+ * Deliberately a short list rather than the whole renderer directory: the
+ * preview origin exists to run the learner's own code, and the less that lives
+ * there the less an escape would reach. In particular the app's own
+ * `index.html` must not be loadable from it.
+ */
+const PREVIEW_FILES = new Set(['preview.html'])
+
 /** Serves the built renderer over both schemes, from the same directory. */
 function registerRendererProtocols(): void {
-  const root = join(here, '../renderer')
+  const root = resolve(join(here, '../renderer'))
 
-  for (const scheme of [APP_SCHEME, PREVIEW_SCHEME]) {
-    protocol.handle(scheme, (request) => {
-      const { pathname } = new URL(request.url)
-      const relative = pathname === '/' || pathname === '' ? 'index.html' : pathname.slice(1)
-      const resolved = join(root, relative)
+  function serve(scheme: string, request: Request): Response | Promise<Response> {
+    const { pathname } = new URL(request.url)
 
-      // Refuse anything that climbs out of the renderer directory.
-      if (!resolved.startsWith(root)) {
-        return new Response('Not found', { status: 404 })
-      }
-      return net.fetch(`file://${resolved}`)
-    })
+    // Decode BEFORE validating. Validating the encoded form and then handing
+    // the decoded one to the loader is how `..%2f..%2f` walks out of the root.
+    let relative: string
+    try {
+      relative = decodeURIComponent(pathname).replace(/^\/+/, '')
+    } catch {
+      return new Response('Not found', { status: 404 })
+    }
+    if (relative === '') relative = scheme === PREVIEW_SCHEME ? 'preview.html' : 'index.html'
+
+    if (scheme === PREVIEW_SCHEME && !PREVIEW_FILES.has(relative)) {
+      return new Response('Not found', { status: 404 })
+    }
+
+    const resolved = resolve(root, relative)
+    // `root + sep` rather than `root`, so a sibling directory whose name
+    // merely starts with the same characters cannot pass.
+    if (resolved !== root && !resolved.startsWith(root + sep)) {
+      return new Response('Not found', { status: 404 })
+    }
+
+    // pathToFileURL, not string concatenation: an install path containing a
+    // space, `#` or `%` would otherwise produce a malformed URL.
+    return net.fetch(pathToFileURL(resolved).toString())
   }
+
+  protocol.handle(APP_SCHEME, (request) => serve(APP_SCHEME, request))
+  protocol.handle(PREVIEW_SCHEME, (request) => serve(PREVIEW_SCHEME, request))
 }
 
 /**
@@ -109,11 +138,27 @@ function createWindow(): BrowserWindow {
   // Showing only once painted avoids the white flash a dark app cannot afford.
   window.once('ready-to-show', () => window.show())
 
-  // A learner clicking a documentation link should get their real browser, and
-  // nothing should ever be able to navigate the app window itself away.
+  // A learner clicking a documentation link should get their real browser.
   window.webContents.setWindowOpenHandler(({ url }) => {
     if (url.startsWith('https://') || url.startsWith('http://')) void shell.openExternal(url)
     return { action: 'deny' }
+  })
+
+  // And nothing may navigate the app window itself away. The window has no
+  // address bar and no reload control, so a page that replaced it would have
+  // nowhere to go back to — and the web track runs code the learner pasted in.
+  const allowDestination = (url: string) =>
+    url.startsWith(`${APP_SCHEME}://`) || url === process.env['ELECTRON_RENDERER_URL']
+
+  window.webContents.on('will-navigate', (event, url) => {
+    if (allowDestination(url)) return
+    event.preventDefault()
+    if (url.startsWith('https://') || url.startsWith('http://')) void shell.openExternal(url)
+  })
+
+  // Nothing in this app needs the camera, microphone or location.
+  window.webContents.session.setPermissionRequestHandler((_contents, _permission, callback) => {
+    callback(false)
   })
 
   const devServer = process.env['ELECTRON_RENDERER_URL']

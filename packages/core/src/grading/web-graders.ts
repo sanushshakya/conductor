@@ -67,9 +67,32 @@ registerGrader('html-structure', async (submission, config, ctx) => {
   if (config.kind !== 'html-structure') throw new Error('wrong config')
   if (!ctx.renderWeb) return UNAVAILABLE
 
-  const run = await ctx.renderWeb(parseWebSubmission(submission))
+  const run = await ctx.renderWeb({
+    ...parseWebSubmission(submission),
+    measureStyles: (config.styles ?? []).map(({ selector, property }) => ({ selector, property })),
+  })
   const document_ = parseDocument(run.html, ctx)
   const checks: CheckResult[] = []
+
+  for (const [index, wanted] of (config.styles ?? []).entries()) {
+    const measured = (run.styles ?? []).find(
+      (s) => s.selector === wanted.selector && s.property === wanted.property,
+    )
+    const actual = (measured?.value ?? '').trim()
+    const matched = wanted.oneOf.some(
+      (candidate) => candidate.trim().toLowerCase() === actual.toLowerCase(),
+    )
+    checks.push({
+      id: `style-${index}`,
+      label: wanted.label,
+      passed: matched,
+      detail: matched
+        ? undefined
+        : `Expected ${wanted.property} to be ${wanted.oneOf.join(' or ')}, found ${
+            actual || '(nothing — is the CSS written?)'
+          }.`,
+    })
+  }
 
   for (const [index, expectation] of config.expect.entries()) {
     let matches: Element[]
@@ -256,7 +279,7 @@ registerGrader('dom-behaviour', async (submission, config, ctx) => {
     }
 
     const document_ = parseDocument(run.html, ctx)
-    checks.push(assertStep(index, step, document_))
+    checks.push(assertStep(index, step, document_, run.values ?? []))
   }
 
   return resultFrom(checks, ctx.xp)
@@ -293,11 +316,32 @@ function assertStep(
     expectText?: string
     expectTextContains?: string
     expectCount?: number
+    expectValue?: string
   },
   document_: Document,
+  values: { id: string | null; name: string | null; value: string }[],
 ): CheckResult {
   const id = `step-${index}`
   const selector = step.expectSelector
+
+  if (selector && step.expectValue !== undefined) {
+    // A field's value never appears in innerHTML, so it is read back from the
+    // live page instead. Asserting text against an input always passes.
+    const fieldId = selector.startsWith('#') ? selector.slice(1) : null
+    const field = values.find((v) => v.id === fieldId || v.name === fieldId)
+    if (!field) {
+      return { id, label: step.label, passed: false, detail: `No form field matched ${describe(selector)}.` }
+    }
+    if (field.value !== step.expectValue) {
+      return {
+        id,
+        label: step.label,
+        passed: false,
+        detail: `Expected the field to contain "${step.expectValue}", found "${field.value}".`,
+      }
+    }
+    return { id, label: step.label, passed: true }
+  }
 
   if (selector) {
     const matches = Array.from(document_.querySelectorAll(selector))

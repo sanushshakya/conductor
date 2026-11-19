@@ -525,8 +525,13 @@ lessons:
         body: |
           Time to do it for real, in a real tool, outside this app.
 
-          You are going to give an agent a web page for the Hospital API you
-          built in Track 4 — a page that lists patients and lets you admit one.
+          You have already built this screen twice: by hand in Track 2, and in
+          React in Track 5. Now you are going to have an agent build it, in
+          minutes, and the point is the comparison — you know exactly how long
+          it took you, and exactly what a correct version has to do.
+
+          Give an agent a web page for the Hospital API you built in Track 4 —
+          a page that lists patients and lets you admit one.
 
           **Conductor cannot grade this.** It cannot see your editor or your
           files, and pretending otherwise would be the exact dishonesty this
@@ -580,8 +585,8 @@ lessons:
         body: |
           Two things to notice about what just happened.
 
-          The agent was fast. Genuinely, unreasonably fast — a page that would
-          have taken you a day in week one took minutes.
+          The agent was fast. Genuinely, unreasonably fast — the screen that
+          took you an evening in Track 2 and another in Track 5 took minutes.
 
           And every single thing on that checklist that failed, you found
           because you knew what to look for. The empty list, the error state,

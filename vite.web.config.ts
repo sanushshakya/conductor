@@ -32,6 +32,12 @@ export default defineConfig({
     // do), so a separate origin is the only way the preview document can
     // run the inline scripts a learner writes.
     host: true,
+    // `host: true` binds every interface, so Vite's permissive dev defaults
+    // have to be closed: `cors` defaults to true (Access-Control-Allow-Origin
+    // *) and `fs.allow` defaults to the whole workspace, which together let
+    // any site the developer visits read this repository.
+    cors: false,
+    fs: { strict: true, allow: [__dirname] },
   },
   build: { outDir: resolve(__dirname, 'out/web') },
 })

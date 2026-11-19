@@ -159,23 +159,24 @@ criteria:
 
   - id: build
     label: The console itself is built and verified
+    web:
+      editors: [js]
+      starter_js: |
+        const verified = 0;
+        console.log(verified);
     exercise:
       id: boss-console-built
       prompt: |
         Work through lesson 5.7's checklist and the six requirements in the
         brief. Enter how many of the six you have verified by running them.
-      starter: |
-        verified = 0
-        print(verified)
       solution: |
-        verified = 6
-        print(verified)
+        const verified = 6;
+        console.log(verified);
       hints:
         - Each one is checked by doing it — stop your API and look at the page.
         - If one is not done, go and do it rather than changing the number.
         - When all six genuinely hold, the answer is 6.
       grader:
-        kind: python-output
-        cases:
-          - label: All six requirements verified
-            expected: "6"
+        kind: js-output
+        expect_logs:
+          - "6"

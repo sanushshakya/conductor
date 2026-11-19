@@ -149,4 +149,4 @@ criteria:
               value: Dee Lama
             click: "#admit"
             expect_selector: "#name"
-            expect_text: ""
+            expect_value: ""
