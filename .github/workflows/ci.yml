@@ -59,19 +59,16 @@ jobs:
             exit 1
           fi
 
+      # requirements-dev pulls in requirements, plus pytest and
+      # pytest-asyncio. Without the latter the suite does not fail — pytest
+      # SKIPS every async test with a warning, so a green run can mean
+      # fifteen tests silently did not happen.
       - name: Install sidecar dependencies
         run: |
-          if [ -f services/mentor/requirements.txt ]; then
-            python -m pip install --upgrade pip
-            python -m pip install -r services/mentor/requirements.txt
-          else
-            echo "sidecar not yet present (pre-Phase-4)"
-          fi
+          python -m pip install --upgrade pip
+          python -m pip install -r services/mentor/requirements-dev.txt
 
+      # No `if [ -d ]` guard: the sidecar exists, and a guard that skips when
+      # a path is missing turns a broken checkout into a passing build.
       - name: Sidecar tests
-        run: |
-          if [ -d services/mentor/tests ]; then
-            python -m pytest services/mentor -q
-          else
-            echo "sidecar tests not yet present (pre-Phase-4)"
-          fi
+        run: python -m pytest services/mentor -q
