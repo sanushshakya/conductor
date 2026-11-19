@@ -209,16 +209,37 @@ export class SqlEngine {
     }
 
     try {
-      const results = this.db.exec(statement)
+      // Statements are iterated rather than passed to `db.exec`, because
+      // `exec` omits a result set entirely when a SELECT matches no rows. That
+      // loses the column names, and makes "no rows" indistinguishable from
+      // "that was not a SELECT" — which is both a crash in `schema()` when the
+      // database is empty and a misleading grader message for any exercise
+      // whose correct answer happens to be zero rows.
+      const tables: ResultSet[] = []
       let truncated = false
       let totalRows = 0
 
-      const tables: ResultSet[] = results.map((result) => {
-        totalRows += result.values.length
-        const rows = result.values.slice(0, ROW_CAP) as SqlValue[][]
-        if (result.values.length > ROW_CAP) truncated = true
-        return { columns: result.columns, rows }
-      })
+      for (const prepared of this.db.iterateStatements(statement)) {
+        try {
+          const columns = prepared.getColumnNames()
+
+          if (columns.length === 0) {
+            // DDL or DML: stepping once is what executes it.
+            prepared.step()
+            continue
+          }
+
+          const rows: SqlValue[][] = []
+          while (prepared.step()) {
+            totalRows += 1
+            if (rows.length < ROW_CAP) rows.push(prepared.get() as SqlValue[])
+            else truncated = true
+          }
+          tables.push({ columns, rows })
+        } finally {
+          prepared.free()
+        }
+      }
 
       return {
         ok: true,
@@ -254,7 +275,9 @@ export class SqlEngine {
     const tables = this.exec(
       "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name",
     )
-    if (!tables.ok) return []
+    // A database with no tables is a legitimate state — lesson 2.9 invites the
+    // learner to drop them — and must not take the screen down with it.
+    if (!tables.ok || tables.tables.length === 0) return []
 
     return tables.tables[0]!.rows.map((row) => {
       const name = String(row[0])

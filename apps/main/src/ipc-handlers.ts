@@ -92,7 +92,17 @@ export function registerHandlers(ipcMain: IpcMainLike, deps: HandlerDeps): void 
     const status = deps.sidecar.status()
     if (!capabilities(status).pythonExec) return sidecarUnavailableRun(status)
     const request = raw as PythonRunRequest
-    return (await deps.sidecar.request('/run/python', { method: 'POST', body: request })) as RunResult
+    try {
+      return (await deps.sidecar.request('/run/python', {
+        method: 'POST',
+        body: request,
+      })) as RunResult
+    } catch {
+      // The engine was reachable but refused — an oversized submission, or a
+      // restart mid-request. The learner gets a sentence, never the status
+      // code or the URL.
+      return sidecarUnavailableRun({ state: 'starting' })
+    }
   })
 
   ipcMain.handle(IPC.mentorAsk, async (_event, raw) => {

@@ -94,9 +94,14 @@ export const ProfileSchema = z.object({
   level: z.number().int().positive(),
   streak: StreakStateSchema,
   completedLessons: z.array(z.string()),
+  // Defaulted rather than required: a profile written by an earlier build has
+  // no such field, and refusing to load it would cost the learner everything.
+  completedBosses: z.array(z.string()).default([]),
   badges: z.array(z.string()),
   exerciseResults: z.record(z.string(), ExerciseResultSchema),
   duelsWon: z.number().int().nonnegative(),
+  /** Duels already won, so a replay cannot be farmed for XP or badges. */
+  duelsWonIds: z.array(z.string()).default([]),
   createdAt: z.string(),
   updatedAt: z.string(),
 })
@@ -116,9 +121,11 @@ export function freshProfile(now: string): Profile {
       forgivenessTokens: 1,
     },
     completedLessons: [],
+    completedBosses: [],
     badges: [],
     exerciseResults: {},
     duelsWon: 0,
+    duelsWonIds: [],
     createdAt: now,
     updatedAt: now,
   }
@@ -157,6 +164,13 @@ export const MentorRequestSchema = z.object({
   tier: z.union([z.literal(1), z.literal(2), z.literal(3)]),
   learnerCode: z.string().optional(),
   authoredHints: z.array(z.string()).optional(),
+  /**
+   * The exercise's reference solution. Sent so the sidecar's tier contract can
+   * refuse a reply that has effectively handed it over. Never shown to the
+   * learner, and never included in the prompt — only compared against the
+   * reply on the way back.
+   */
+  solution: z.string().optional(),
 })
 export type MentorRequest = z.infer<typeof MentorRequestSchema>
 

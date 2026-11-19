@@ -6,6 +6,12 @@ interface Props {
   authoredHints: string[]
   lessonId?: string
   learnerCode?: string
+  /**
+   * The exercise's reference solution. Sent so the sidecar's tier contract can
+   * refuse a reply that has effectively leaked it — without it, that guard is
+   * dead code in production. Never shown to the learner.
+   */
+  solution?: string
 }
 
 /**
@@ -16,7 +22,7 @@ interface Props {
  * When no model is configured the reply comes from the same authored text,
  * which is why the panel never needs to be hidden or disabled.
  */
-export function MentorPanel({ authoredHints, lessonId, learnerCode }: Props) {
+export function MentorPanel({ authoredHints, lessonId, learnerCode, solution }: Props) {
   const { turns, tier, asking, askMentor } = useMentor(authoredHints)
   const [draft, setDraft] = useState('')
 
@@ -25,7 +31,7 @@ export function MentorPanel({ authoredHints, lessonId, learnerCode }: Props) {
     const question = draft.trim()
     if (!question || asking) return
     setDraft('')
-    await askMentor(question, lessonId, learnerCode)
+    await askMentor(question, lessonId, learnerCode, solution)
   }
 
   return (

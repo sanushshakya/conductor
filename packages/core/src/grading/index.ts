@@ -22,7 +22,21 @@ export interface GradeContext {
   /** Resolves a named SQL fixture to a live engine. Required by sql-* graders. */
   sqlEngineFor?: (fixture: string) => Promise<import('../sql/engine').SqlEngine>
   /** Overrides the default code runner. Used by the harness and by tests. */
-  runCode?: (code: string, stdin?: string) => Promise<{ ok: boolean; stdout: string; stderr: string }>
+  runCode?: (
+    code: string,
+    stdin?: string,
+  ) => Promise<{
+    ok: boolean
+    stdout: string
+    stderr: string
+    /**
+     * True when no engine executed the code at all — as opposed to it running
+     * and failing. The distinction decides whether the learner is told they
+     * were wrong or told it could not be checked, and getting that backwards
+     * is the fastest way to lose their trust in the grading.
+     */
+    unavailable?: boolean
+  }>
 }
 
 export type Grader = (

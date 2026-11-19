@@ -5,8 +5,14 @@ export interface CodeOutcome {
   ok: boolean
   stdout: string
   stderr: string
-  /** Which engine answered. Shown in the output panel's footer. */
-  engine: 'cpython' | 'boot'
+  /** Which engine answered, or `none` when neither could run the code. */
+  engine: 'cpython' | 'boot' | 'none'
+  /**
+   * True when nothing executed the code. Graders turn this into "could not be
+   * checked" rather than "wrong" — a learner whose correct Track 1 answer is
+   * marked wrong because provisioning failed has been told something untrue.
+   */
+  unavailable?: boolean
 }
 
 /**
@@ -42,6 +48,21 @@ export async function runLearnerCode(code: string, stdin?: string): Promise<Code
   }
 
   const boot = bootPython(code)
+
+  // Boot refuses anything outside its documented subset rather than guessing.
+  // When the sidecar is also absent, that refusal means NOBODY ran this — it
+  // is not a verdict on the learner's code.
+  if (!boot.ok && boot.error.kind === 'unsupported') {
+    return {
+      ok: false,
+      stdout: '',
+      stderr:
+        'The Python engine is not running, so this could not be run. Everything in Boot and SQL still works.',
+      engine: 'none',
+      unavailable: true,
+    }
+  }
+
   return {
     ok: boot.ok,
     stdout: boot.stdout,

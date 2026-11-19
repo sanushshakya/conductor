@@ -72,3 +72,20 @@ test('an empty right table yields no rows for INNER and all rows for LEFT', () =
   expect(computeJoin(doctors, empty, 'id', 'doctor_id', 'inner').rows).toHaveLength(0)
   expect(computeJoin(doctors, empty, 'id', 'doctor_id', 'left').rows).toHaveLength(3)
 })
+
+test('NULL never joins to NULL, the way lesson 2.3 says', () => {
+  const withNulls: JoinTable = {
+    name: 'doctors',
+    columns: ['id', 'name'],
+    rows: [[null, 'No department']],
+  }
+  const others: JoinTable = {
+    name: 'appointments',
+    columns: ['id', 'doctor_id'],
+    rows: [[10, null]],
+  }
+  expect(computeJoin(withNulls, others, 'id', 'doctor_id', 'inner').rows).toHaveLength(0)
+  const left = computeJoin(withNulls, others, 'id', 'doctor_id', 'left')
+  expect(left.rows).toHaveLength(1)
+  expect(left.rows[0]!.matched).toBe(false)
+})

@@ -55,7 +55,10 @@ export function computeJoin(
 
   for (const leftRow of left.rows) {
     const key = leftRow[leftIndex]!
-    const partners = right.rows.filter((r) => r[rightIndex] === key)
+    // NULL never matches anything, including another NULL — the same rule
+    // lesson 2.3 spends a page on. Matching them here would have the diagram
+    // contradict the text it illustrates.
+    const partners = key === null ? [] : right.rows.filter((r) => r[rightIndex] === key)
 
     if (partners.length > 0) {
       matchedKeys.push(key)

@@ -1,4 +1,4 @@
-import { TRACK_META, type Profile, type Track } from '@conductor/shared'
+import { TRACK_META, bossProgress, type Boss, type Profile, type Track } from '@conductor/shared'
 
 interface Props {
   tracks: Track[]
@@ -6,6 +6,10 @@ interface Props {
   currentLessonId: string | null
   onSelect(lessonId: string): void
   locked(track: Track): boolean
+  /** The boss project that closes each track, keyed by track id. */
+  bossFor(track: Track): Boss | undefined
+  currentBossId: string | null
+  onSelectBoss(bossId: string): void
 }
 
 /**
@@ -15,7 +19,16 @@ interface Props {
  * Hiding what comes later makes a course feel endless; seeing that there are
  * six tracks and roughly where you are is what makes finishing feel possible.
  */
-export function TrackMap({ tracks, profile, currentLessonId, onSelect, locked }: Props) {
+export function TrackMap({
+  tracks,
+  profile,
+  currentLessonId,
+  onSelect,
+  locked,
+  bossFor,
+  currentBossId,
+  onSelectBoss,
+}: Props) {
   return (
     <nav aria-label="Course" className="space-y-6 p-4">
       {tracks.map((track) => {
@@ -71,6 +84,45 @@ export function TrackMap({ tracks, profile, currentLessonId, onSelect, locked }:
                 )
               })}
             </ul>
+
+            {(() => {
+              // The boss closes its track. Showing it in the spine is what
+              // makes the lessons' own "unlocks: the boss project" promise
+              // true — and these are the projects the learner can show people.
+              const boss = bossFor(track)
+              if (!boss) return null
+              const progress = bossProgress(
+                profile,
+                boss.criteria.map((c) => c.exercise.id),
+              )
+              const current = boss.id === currentBossId
+              return (
+                <button
+                  type="button"
+                  disabled={isLocked}
+                  onClick={() => onSelectBoss(boss.id)}
+                  aria-current={current ? 'page' : undefined}
+                  className={`focus-ring mt-1 flex w-full items-center gap-2 rounded-md border px-2 py-1.5 text-left text-xs transition-colors ${
+                    current
+                      ? 'border-brass-500/60 bg-brass-500/15 text-brass-400'
+                      : isLocked
+                        ? 'cursor-not-allowed border-ink-700 text-parchment-400/40'
+                        : 'border-ink-700 text-parchment-300 hover:border-brass-600/50 hover:bg-ink-800'
+                  }`}
+                >
+                  <span
+                    aria-hidden
+                    className={`h-1.5 w-1.5 shrink-0 rotate-45 ${
+                      progress.complete ? 'bg-verify-400' : 'bg-brass-600'
+                    }`}
+                  />
+                  <span className="truncate">{boss.title.replace(/^Boss:\s*/, '')}</span>
+                  <span className="ml-auto font-mono text-[10px] text-parchment-400">
+                    {progress.passed}/{progress.total}
+                  </span>
+                </button>
+              )
+            })()}
 
             {isLocked && (
               <p className="mt-1 px-2 text-[11px] text-parchment-400/60">

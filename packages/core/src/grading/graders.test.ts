@@ -167,3 +167,14 @@ test('quiz check label is a verdict, not the first line of a multi-line question
   expect(wrong.checks[0]!.label).toBe('Not that one')
   expect(right.checks[0]!.label).toBe('Correct')
 })
+
+test('output-match fails a program that prints the right thing and then crashes', async () => {
+  // Printing the expected text and then dying is not a working program, and
+  // grading it as correct teaches exactly the wrong lesson about "it ran".
+  const r = await run('print("Sushil")\nprint(undefined_name)', {
+    kind: 'output-match',
+    cases: [{ expected: 'Sushil' }],
+  })
+  expect(r.passed).toBe(false)
+  expect(r.checks[0]!.detail).toMatch(/NameError/)
+})

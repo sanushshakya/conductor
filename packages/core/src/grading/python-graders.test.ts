@@ -152,3 +152,39 @@ test('python graders return a clear unavailable result when the runner is absent
   expect(r.unavailableReason).toMatch(/python/i)
   expect(r.checks).toEqual([])
 })
+
+test('a correct answer is reported as UNCHECKED, not wrong, when nothing could run it', async () => {
+  // The single worst grading outcome: telling a learner their correct answer
+  // is wrong because the engine that would have proved it never started.
+  const unavailableRunner = async () => ({
+    ok: false,
+    stdout: '',
+    stderr: 'That needs the Python engine.',
+    unavailable: true as const,
+  })
+
+  const r = await grade(
+    'def double(n):\n    return n * 2',
+    { kind: 'python-unit', assertions: ['assert double(2) == 4'] },
+    { exerciseId: 'py-1', xp: 25, runCode: unavailableRunner },
+  )
+  expect(r.passed).toBe(false)
+  expect(r.checks).toEqual([])
+  expect(r.unavailableReason).toMatch(/could not be checked|not running/i)
+  // And it must not claim the engine is "warming up" when it has failed.
+  expect(r.unavailableReason).not.toMatch(/warming up/i)
+})
+
+test('python-output also reports unchecked rather than wrong when nothing ran', async () => {
+  const r = await grade(
+    'print("hi")',
+    { kind: 'python-output', cases: [{ expected: 'hi' }] },
+    {
+      exerciseId: 'py-2',
+      xp: 25,
+      runCode: async () => ({ ok: false, stdout: '', stderr: 'no engine', unavailable: true as const }),
+    },
+  )
+  expect(r.checks).toEqual([])
+  expect(r.unavailableReason).toBeTruthy()
+})

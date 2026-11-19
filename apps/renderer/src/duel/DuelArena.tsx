@@ -34,6 +34,9 @@ export function DuelArena({ duel, onFinished }: Props) {
   const [session, setSession] = useState<DuelSession>(() => startDuel(duel, new Date()))
   const [now, setNow] = useState(() => new Date())
   const recordDuelWin = useProfile((s) => s.recordDuelWin)
+  // A replay is for practice, not for XP: the bug's location is on screen by
+  // the time the button appears.
+  const alreadyWon = useProfile((s) => s.profile.duelsWonIds.includes(duel.id))
   const reported = useRef(false)
 
   useEffect(() => {
@@ -56,7 +59,7 @@ export function DuelArena({ duel, onFinished }: Props) {
     if (session.state === 'running' || reported.current) return
     reported.current = true
     const outcome = resolveDuel(session)
-    if (outcome.won) void recordDuelWin()
+    if (outcome.won) void recordDuelWin(outcome.xp, duel.id)
     onFinished?.(outcome.won)
   }, [session, recordDuelWin, onFinished])
 
@@ -158,9 +161,11 @@ export function DuelArena({ duel, onFinished }: Props) {
           >
             <p className={outcome.won ? 'text-verify-400' : 'text-parchment-200'}>
               {outcome.won
-                ? session.wrongGuesses.length === 0
-                  ? `Found it first time. +${outcome.xp} XP.`
-                  : `Found it. +${outcome.xp} XP.`
+                ? alreadyWon
+                  ? 'Found it. You have already won this one, so no XP this time.'
+                  : session.wrongGuesses.length === 0
+                    ? `Found it first time. +${outcome.xp} XP.`
+                    : `Found it. +${outcome.xp} XP.`
                 : 'Out of time. Here is what it was.'}
             </p>
           </div>

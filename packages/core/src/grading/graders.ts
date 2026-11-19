@@ -50,14 +50,17 @@ registerGrader('output-match', async (submission, config, ctx) => {
     const actual = normalize(run.stdout, trimTrailing, caseSensitive)
     const expected = normalize(testCase.expected, trimTrailing, caseSensitive)
 
-    if (!run.ok && actual !== expected) {
+    // A program that crashed did not work, even if it printed the right thing
+    // on the way down. Grading that as correct teaches the opposite of what
+    // Track 0 spends two lessons establishing about reading errors.
+    if (!run.ok) {
       checks.push({
         id: `case-${index}`,
         label,
         passed: false,
         // The error is the most useful thing a beginner can be shown here, so
         // it is surfaced verbatim rather than replaced with "incorrect".
-        detail: run.stderr,
+        detail: run.stderr || 'Your program stopped before it finished.',
       })
       continue
     }

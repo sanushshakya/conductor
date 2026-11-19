@@ -952,9 +952,12 @@ lessons:
 
           Indexes are not free — they take space, and every write has to update
           them. The rule of thumb: index the columns you filter and join on,
-          which in this database means the foreign keys. Both of the ones that
-          matter are already there; look for `idx_appointments_patient` in the
-          schema.
+          which in this database means the foreign keys.
+
+          Two already exist here. You can see them for yourself — the database
+          keeps its own catalogue, and you query it like any other table:
+
+              SELECT name, tbl_name FROM sqlite_master WHERE type = 'index';
 
       - kind: checkpoint
         body: |

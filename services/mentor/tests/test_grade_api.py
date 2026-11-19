@@ -152,3 +152,15 @@ def test_the_suite_registry_matches_the_shared_constant():
     from app.grade_api import SUITES
 
     assert set(SUITES) == {"hospital-crud"}
+
+
+def test_an_address_without_a_scheme_is_accepted():
+    """`localhost:8000` is what a learner types; it must not be refused."""
+    port = free_port()
+    result = grade_api(f"localhost:{port}", "hospital-crud")
+    # Reaches the connection step, which proves the address check let it past.
+    assert result["checks"][0]["id"] == "connection"
+
+
+def test_a_schemeless_public_host_is_still_refused():
+    assert grade_api("evil.com:8000", "hospital-crud")["checks"][0]["id"] == "address"

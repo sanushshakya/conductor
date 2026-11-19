@@ -16,7 +16,7 @@ const UNAVAILABLE: ExerciseResult = {
   checks: [],
   xpAwarded: 0,
   unavailableReason:
-    'The Python engine is not running, so this could not be checked. Try again in a moment.',
+    'This could not be checked, because the Python engine is not running. Your answer has not been marked wrong — nothing ran it.',
 }
 
 /** Marker the assertion harness uses to report results on stdout. */
@@ -39,6 +39,9 @@ registerGrader('python-output', async (submission, config, ctx) => {
 
   for (const [index, testCase] of config.cases.entries()) {
     const run = await ctx.runCode(submission, testCase.stdin)
+    // Nothing executed. Reporting checks here would mark a correct answer
+    // wrong for a reason that is not the learner's fault.
+    if (run.unavailable) return UNAVAILABLE
     const actual = trimTrailing ? normalize(run.stdout) : run.stdout
     const expected = trimTrailing ? normalize(testCase.expected) : testCase.expected
     const passed = actual === expected
@@ -66,9 +69,18 @@ registerGrader('python-output', async (submission, config, ctx) => {
  * hide the rest — a learner whose first case fails still learns that the other
  * three passed, which is the difference between "nearly there" and "broken".
  *
- * Results are written to file descriptor 3's stand-in: a dedicated marker on
- * stdout, with the learner's own stdout captured and discarded first, so a
- * learner printing the marker themselves cannot forge a pass.
+ * Results come back on stdout behind a marker, with the learner's own stdout
+ * captured into a buffer first so ordinary `print` output cannot be mistaken
+ * for the protocol.
+ *
+ * This stops accidental collisions, not a determined forgery: `sys.__stdout__`
+ * and the protocol's own `json` module are both still reachable from the
+ * learner's namespace, so someone who wants to fake a pass can. That is
+ * accepted deliberately — there is no certificate, no grade and no stake here,
+ * so the only person a forgery deceives is the forger, and an out-of-band
+ * channel would complicate the one path every Python exercise runs through.
+ * What the grader must never do is mark a CORRECT answer wrong, which is a
+ * different property and is tested.
  */
 function buildAssertionScript(submission: string, preamble: string, assertions: string[]): string {
   const encoded = JSON.stringify(assertions)
@@ -109,6 +121,7 @@ registerGrader('python-unit', async (submission, config, ctx) => {
 
   const script = buildAssertionScript(submission, config.preamble ?? '', config.assertions)
   const run = await ctx.runCode(script)
+  if (run.unavailable) return UNAVAILABLE
 
   // Only the LAST marker line counts. The learner's own stdout is captured
   // inside the script, but belt and braces: a forged marker printed before the

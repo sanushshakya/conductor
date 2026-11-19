@@ -249,3 +249,35 @@ test('sql-mutation runs its setup before the learner statement', async () => {
   })
   expect(r.passed).toBe(true)
 })
+
+test('a mutating submission cannot move the expected answer to meet itself', async () => {
+  // The learner's statements used to run BEFORE the reference, on the same
+  // database, so a submission that deleted most of the table and rewrote the
+  // rest passed against a reference it had itself arranged.
+  const cheat = `DELETE FROM prescriptions; DELETE FROM appointments;
+    DELETE FROM patients WHERE id <> (SELECT MIN(id) FROM patients);
+    UPDATE patients SET blood_type = 'O-';
+    SELECT full_name FROM patients;`
+
+  const r = await run(cheat, {
+    kind: 'sql-result',
+    reference: "SELECT full_name FROM patients WHERE blood_type = 'O-'",
+  })
+  expect(r.passed).toBe(false)
+})
+
+test('a genuine query still passes after the reference is computed separately', async () => {
+  const r = await run("SELECT full_name FROM patients WHERE blood_type = 'O-'", {
+    kind: 'sql-result',
+    reference: "SELECT full_name FROM patients WHERE blood_type = 'O-'",
+  })
+  expect(r.passed).toBe(true)
+})
+
+test('an exercise whose correct answer is zero rows can be authored', async () => {
+  const r = await run("SELECT full_name FROM patients WHERE blood_type = 'ZZ'", {
+    kind: 'sql-result',
+    reference: "SELECT full_name FROM patients WHERE blood_type = 'ZZ'",
+  })
+  expect(r.passed).toBe(true)
+})

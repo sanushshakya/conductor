@@ -20,7 +20,7 @@ export function useMentor(authoredHints: string[]) {
   const [asking, setAsking] = useState(false)
 
   const askMentor = useCallback(
-    async (question: string, lessonId?: string, learnerCode?: string) => {
+    async (question: string, lessonId?: string, learnerCode?: string, solution?: string) => {
       setAsking(true)
       try {
         const reply = await host().askMentor({
@@ -29,6 +29,7 @@ export function useMentor(authoredHints: string[]) {
           lessonId,
           learnerCode,
           authoredHints,
+          solution,
         })
         setTurns((current) => [...current, { question, reply }])
         setTier((current) => (current < 3 ? ((current + 1) as 2 | 3) : 3))

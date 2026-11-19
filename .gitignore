@@ -11,8 +11,9 @@ __pycache__/
 coverage/
 *.log
 .superpowers/
-dist/
 *.tsbuildinfo
-out/
 services/mentor/.venv/
-release/
+
+# Generated declaration files; the only hand-written one is virtual-modules.d.ts
+apps/*/src/**/*.d.ts
+!apps/renderer/src/virtual-modules.d.ts

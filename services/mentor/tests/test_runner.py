@@ -78,8 +78,19 @@ def test_memory_hog_is_killed_where_the_os_enforces_limits():
 
 
 def test_network_access_is_denied():
-    code = "import socket\ntry:\n    socket.socket()\n    print('OPENED')\nexcept Exception as e:\n    print('BLOCKED')"
-    assert "BLOCKED" in run_python(code).stdout
+    """Connecting is the boundary, not constructing.
+
+    A socket object that never connects is harmless, and refusing construction
+    breaks stdlib imports that merely touch the module.
+    """
+    code = (
+        "import socket\n"
+        "try:\n"
+        "    socket.socket().connect(('1.1.1.1', 80)); print('OPENED')\n"
+        "except Exception:\n"
+        "    print('BLOCKED')"
+    )
+    assert "BLOCKED" in run_python(code, timeout_ms=10000).stdout
 
 
 def test_outbound_http_is_denied():
@@ -146,3 +157,74 @@ def test_empty_code_runs_and_prints_nothing():
     result = run_python("")
     assert result.ok is True
     assert result.stdout == ""
+
+
+# ── sandbox escapes found in review ──────────────────────────────────────
+
+
+def test_the_raw_socket_module_is_also_blocked():
+    """`socket` is a thin wrapper over the C extension `_socket`.
+
+    Patching only the wrapper leaves `import _socket` as a one-line escape,
+    which is exactly the code an agent might produce and a learner would paste
+    in without reading.
+    """
+    code = (
+        "import _socket\n"
+        "try:\n"
+        "    s = _socket.socket(); s.connect(('1.1.1.1', 80)); print('OPENED')\n"
+        "except Exception:\n"
+        "    print('BLOCKED')"
+    )
+    assert "BLOCKED" in run_python(code, timeout_ms=10000).stdout
+
+
+def test_reloading_socket_does_not_restore_networking():
+    code = (
+        "import socket, importlib\n"
+        "importlib.reload(socket)\n"
+        "try:\n"
+        "    socket.create_connection(('1.1.1.1', 80), 3); print('OPENED')\n"
+        "except Exception:\n"
+        "    print('BLOCKED')"
+    )
+    assert "BLOCKED" in run_python(code, timeout_ms=10000).stdout
+
+
+def test_the_mentor_api_key_is_not_visible_to_learner_code(monkeypatch):
+    monkeypatch.setenv("CONDUCTOR_API_KEY", "sk-SECRET-KEY-12345")
+    result = run_python("import os; print(os.environ.get('CONDUCTOR_API_KEY', 'ABSENT'))")
+    assert "sk-SECRET-KEY-12345" not in result.stdout
+    assert result.stdout.strip() == "ABSENT"
+
+
+def test_only_an_allowlist_of_environment_variables_reaches_learner_code(monkeypatch):
+    monkeypatch.setenv("SOME_COMPANY_INTERNAL_SECRET", "leak-me")
+    result = run_python("import os; print('leak-me' in str(dict(os.environ)))")
+    assert result.stdout.strip() == "False"
+
+
+def test_path_is_still_available_so_normal_python_works(monkeypatch):
+    result = run_python("import os, json; print(bool(os.environ.get('PATH')))")
+    assert result.stdout.strip() == "True"
+
+
+def test_a_syntax_error_does_not_reveal_the_sandbox_temp_path():
+    result = run_python("print('unclosed")
+    assert "SyntaxError" in result.stderr
+    assert "/var/folders" not in result.stderr
+    assert "conductor-run-" not in result.stderr
+    assert "/tmp" not in result.stderr
+    assert "your program" in result.stderr
+
+
+def test_an_indentation_error_does_not_reveal_the_sandbox_temp_path():
+    result = run_python("def f():\npass")
+    assert "conductor-run-" not in result.stderr
+
+
+def test_stderr_truncation_is_explained_like_stdout_truncation():
+    result = run_python(
+        "import sys\nfor _ in range(200000): sys.stderr.write('y' * 100)", timeout_ms=10000
+    )
+    assert "truncated" in result.stderr.lower()

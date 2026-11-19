@@ -209,3 +209,40 @@ test('a real crash is reported, not retried against the Boot interpreter', async
   await userEvent.click(screen.getByRole('button', { name: /^run$/i }))
   expect(await screen.findByText(/NameError/)).toBeInTheDocument()
 })
+
+test('a wrong quiz answer can be corrected and resubmitted', async () => {
+  render(<LessonPlayer lesson={lesson()} onFinished={() => {}} />)
+  await userEvent.click(screen.getByRole('button', { name: /continue/i }))
+
+  await userEvent.click(screen.getByRole('button', { name: 'Wrong' }))
+  await userEvent.click(screen.getByRole('button', { name: /check my answer/i }))
+  await waitFor(() => expect(screen.getByText('Not that one')).toBeInTheDocument())
+
+  // The learner must be able to pick again and try again.
+  await userEvent.click(screen.getByRole('button', { name: 'Right' }))
+  await userEvent.click(screen.getByRole('button', { name: /check my answer/i }))
+
+  await waitFor(() => expect(screen.getByRole('button', { name: /^continue$/i })).toBeEnabled())
+})
+
+test('a wrong quiz answer does not reveal the correct option', async () => {
+  render(<LessonPlayer lesson={lesson()} onFinished={() => {}} />)
+  await userEvent.click(screen.getByRole('button', { name: /continue/i }))
+  await userEvent.click(screen.getByRole('button', { name: 'Wrong' }))
+  await userEvent.click(screen.getByRole('button', { name: /check my answer/i }))
+
+  await waitFor(() => expect(screen.getByText('Not that one')).toBeInTheDocument())
+  // Giving the answer away on the first wrong guess makes the retry pointless.
+  expect(screen.getByRole('button', { name: 'Right' })).toHaveAttribute('aria-pressed', 'false')
+  expect(screen.getByRole('button', { name: 'Right' })).toBeEnabled()
+})
+
+test('a correct quiz answer locks the options', async () => {
+  render(<LessonPlayer lesson={lesson()} onFinished={() => {}} />)
+  await userEvent.click(screen.getByRole('button', { name: /continue/i }))
+  await userEvent.click(screen.getByRole('button', { name: 'Right' }))
+  await userEvent.click(screen.getByRole('button', { name: /check my answer/i }))
+
+  await waitFor(() => expect(screen.getByText('Correct')).toBeInTheDocument())
+  expect(screen.getByRole('button', { name: 'Right' })).toBeDisabled()
+})

@@ -52,6 +52,19 @@ class CheckResult(BaseModel):
     detail: str | None = None
 
 
+def _normalise(url: str) -> str:
+    """Adds the scheme a learner almost always omits.
+
+    `localhost:8000` parses with scheme='localhost', which the loopback check
+    then refuses with "only talks to a server on your own computer" — true of
+    nothing the learner did, and impossible to act on.
+    """
+    stripped = url.strip()
+    if "://" not in stripped:
+        return f"http://{stripped}"
+    return stripped
+
+
 def _is_loopback(url: str) -> bool:
     """True only for a URL pointing at this machine.
 
@@ -193,6 +206,7 @@ SUITES: dict[str, Callable[[], list[Step]]] = {
 
 def grade_api(base_url: str, suite_id: str) -> dict[str, Any]:
     """Runs a suite against the learner's server and reports what happened."""
+    base_url = _normalise(base_url)
     if not _is_loopback(base_url):
         return {
             "reachable": False,

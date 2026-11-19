@@ -203,6 +203,14 @@ export class SidecarSupervisor {
       },
       ...(init.body === undefined ? {} : { body: JSON.stringify(init.body) }),
     })
+
+    // An error body is not a result. Returning it anyway handed the renderer
+    // a `{detail: ...}` object where it expected a RunResult, which it then
+    // rendered as "undefinedundefined" in the learner's output panel.
+    if (!response.ok) {
+      throw new Error(`the Python engine answered ${response.status} for ${path}`)
+    }
+
     return response.json()
   }
 

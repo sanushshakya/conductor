@@ -5,11 +5,14 @@ import {
   evaluateBadges,
   recordExerciseResult,
   completeLesson,
+  completeBoss,
+  bossProgress,
+  recordDuelWin,
   localDay,
   XP,
   BADGES,
 } from './progression'
-import { freshProfile, type Profile } from './domain'
+import { freshProfile, ProfileSchema, type Profile } from './domain'
 
 function profileAt(day: string, overrides: Partial<Profile> = {}): Profile {
   const base = freshProfile(`${day}T12:00:00.000Z`)
@@ -219,4 +222,82 @@ test('completeLesson records the lesson once and awards lesson XP', () => {
 test('completeLesson adds newly earned badges to the profile', () => {
   const p = completeLesson(profileAt('2026-11-18'), '2.6')
   expect(p.badges).toContain('schema-architect')
+})
+
+// ── boss projects ─────────────────────────────────────────────────────────
+
+test('completeBoss records the boss once and awards boss XP', () => {
+  let p = completeBoss(profileAt('2026-11-18'), 'hospital-dbms')
+  expect(p.completedBosses).toEqual(['hospital-dbms'])
+  expect(p.xp).toBe(XP.bossClear)
+  p = completeBoss(p, 'hospital-dbms')
+  expect(p.xp).toBe(XP.bossClear)
+})
+
+test('bossProgress reports how many criteria have been passed', () => {
+  let p = profileAt('2026-11-18')
+  p = recordExerciseResult(p, 'a', { passed: true, checks: [], xpAwarded: 0 })
+  p = recordExerciseResult(p, 'b', { passed: false, checks: [], xpAwarded: 0 })
+  expect(bossProgress(p, ['a', 'b', 'c'])).toEqual({ passed: 1, total: 3, complete: false })
+})
+
+test('bossProgress reports complete only when every criterion has passed', () => {
+  let p = profileAt('2026-11-18')
+  for (const id of ['a', 'b']) {
+    p = recordExerciseResult(p, id, { passed: true, checks: [], xpAwarded: 0 })
+  }
+  expect(bossProgress(p, ['a', 'b'])).toEqual({ passed: 2, total: 2, complete: true })
+})
+
+test('a boss with no criteria is not reported as complete', () => {
+  expect(bossProgress(profileAt('2026-11-18'), []).complete).toBe(false)
+})
+
+test('an older profile with no completedBosses field still loads', () => {
+  const legacy = { ...freshProfile('2026-11-18T00:00:00.000Z') } as Record<string, unknown>
+  delete legacy['completedBosses']
+  const parsed = ProfileSchema.safeParse(legacy)
+  expect(parsed.success).toBe(true)
+  expect(parsed.success && parsed.data.completedBosses).toEqual([])
+})
+
+test('recordDuelWin awards the XP it is given, not a constant', () => {
+  const p = recordDuelWin(profileAt('2026-11-18'), 50)
+  expect(p.xp).toBe(50)
+  expect(p.duelsWon).toBe(1)
+})
+
+test('a duel already won awards nothing on a replay', () => {
+  let p = recordDuelWin(profileAt('2026-11-18'), 50, 'duel-off-by-one')
+  const afterFirst = p.xp
+  const wonFirst = p.duelsWon
+  p = recordDuelWin(p, 50, 'duel-off-by-one')
+  expect(p.xp).toBe(afterFirst)
+  expect(p.duelsWon).toBe(wonFirst)
+})
+
+test('a different duel still counts', () => {
+  let p = recordDuelWin(profileAt('2026-11-18'), 50, 'duel-a')
+  p = recordDuelWin(p, 40, 'duel-b')
+  expect(p.duelsWon).toBe(2)
+  expect(p.xp).toBe(90)
+})
+
+test('bug-hunter cannot be earned by replaying one duel ten times', () => {
+  let p = profileAt('2026-11-18')
+  for (let i = 0; i < 10; i += 1) p = recordDuelWin(p, 50, 'duel-off-by-one')
+  expect(p.duelsWon).toBe(1)
+  expect(evaluateBadges(p)).not.toContain('bug-hunter')
+})
+
+test('a spent forgiveness token is not handed straight back', () => {
+  let p = touchStreak(profileAt('2026-11-18'), localDate('2026-11-18', 9))
+  for (let d = 19; d <= 24; d += 1) p = touchStreak(p, localDate(`2026-11-${d}`, 9))
+  expect(p.streak.current).toBe(7)
+  expect(p.streak.forgivenessTokens).toBe(1)
+
+  // Miss the 25th, return on the 26th: the token is spent, streak continues.
+  p = touchStreak(p, localDate('2026-11-26', 9))
+  expect(p.streak.current).toBe(8)
+  expect(p.streak.forgivenessTokens).toBe(0)
 })

@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import {
   completeLesson as completeLessonPure,
+  completeBoss as completeBossPure,
   recordExerciseResult as recordPure,
   recordDuelWin as recordDuelPure,
   touchStreak,
@@ -18,7 +19,8 @@ interface ProfileState {
   load(): Promise<void>
   recordExercise(exerciseId: string, result: ExerciseResult): Promise<void>
   completeLesson(lessonId: string): Promise<void>
-  recordDuelWin(): Promise<void>
+  completeBoss(bossId: string): Promise<void>
+  recordDuelWin(xp: number, duelId: string): Promise<void>
   acknowledgeBadges(): void
   reset(): Promise<void>
 }
@@ -60,9 +62,18 @@ export const useProfile = create<ProfileState>((set, get) => ({
     await host().updateProfile(after)
   },
 
-  async recordDuelWin() {
+  async completeBoss(bossId) {
     const before = get().profile
-    const after = recordDuelPure(before)
+    const after = completeBossPure(before, bossId)
+    if (after === before) return
+    set({ profile: after, pendingBadges: newBadges(before, after) })
+    await host().updateProfile(after)
+  },
+
+  async recordDuelWin(xp, duelId) {
+    const before = get().profile
+    const after = recordDuelPure(before, xp, duelId)
+    if (after === before) return
     set({ profile: after, pendingBadges: newBadges(before, after) })
     await host().updateProfile(after)
   },

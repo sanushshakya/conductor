@@ -1,5 +1,5 @@
 import { tracks, bosses, duels, atlas, fixtures } from 'virtual:conductor-content'
-import { TRACK_META, type Lesson, type Track, type TrackId } from '@conductor/shared'
+import { TRACK_META, type Boss, type Lesson, type Track, type TrackId } from '@conductor/shared'
 
 /** The curriculum, validated at build time by the content plugin. */
 export { tracks, bosses, duels, atlas, fixtures }
@@ -40,6 +40,15 @@ export function resumeLesson(completed: string[]): Lesson | undefined {
 
 export function bossForTrack(track: TrackId) {
   return bosses.find((b) => b.track === track)
+}
+
+export function bossById(id: string) {
+  return bosses.find((b) => b.id === id)
+}
+
+/** Ordered the way the learner meets them: each track, then its boss. */
+export function courseOutline(): { track: Track; boss: Boss | undefined }[] {
+  return orderedTracks().map((track) => ({ track, boss: bossForTrack(track.track) }))
 }
 
 export function duelById(id: string) {

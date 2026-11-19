@@ -8,11 +8,14 @@ import {
 } from '@conductor/shared'
 import { host, isDesktop } from './host'
 import { useProfile } from './store/useProfile'
-import { orderedTracks, lessonById, resumeLesson } from './content'
+import { orderedTracks, lessonById, resumeLesson, bossById, bossForTrack } from './content'
 import { isFirstRun } from '@conductor/shared'
 import { LessonPlayer } from './lesson/LessonPlayer'
+import { BossPlayer } from './lesson/BossPlayer'
 import { TrackMap } from './components/TrackMap'
 import { FirstRun } from './onboarding/FirstRun'
+import { ErrorBoundary } from './components/ErrorBoundary'
+import { BadgeToast } from './components/BadgeToast'
 import { XpBar } from './components/XpBar'
 import './visualizers'
 import '@conductor/core/grading/graders'
@@ -27,6 +30,7 @@ import '@conductor/core/grading/api-graders'
 export function App() {
   const [sidecar, setSidecar] = useState<SidecarStatus>({ state: 'stopped' })
   const [lessonId, setLessonId] = useState<string | null>(null)
+  const [bossId, setBossId] = useState<string | null>(null)
   const [welcomed, setWelcomed] = useState(false)
   const { profile, loaded, load } = useProfile()
 
@@ -51,6 +55,7 @@ export function App() {
   const notice = capabilityNotice(sidecar)
   const tracks = orderedTracks()
   const lesson = lessonId ? lessonById(lessonId) : undefined
+  const boss = bossId ? bossById(bossId) : undefined
 
   /** Tracks whose exercises genuinely cannot be graded right now. */
   function locked(track: Track): boolean {
@@ -73,6 +78,7 @@ export function App() {
 
   return (
     <div className="flex h-full flex-col bg-ink-900">
+      <BadgeToast />
       <header className="flex shrink-0 items-center justify-between border-b border-ink-700 bg-ink-850 px-5 py-2.5">
         <div className="flex items-baseline gap-3">
           <span className="font-semibold tracking-tight text-parchment-100">{CONDUCTOR_NAME}</span>
@@ -102,19 +108,30 @@ export function App() {
           <TrackMap
             tracks={tracks}
             profile={profile}
-            currentLessonId={lessonId}
-            onSelect={setLessonId}
+            currentLessonId={bossId ? null : lessonId}
+            onSelect={(id) => {
+              setBossId(null)
+              setLessonId(id)
+            }}
             locked={locked}
+            bossFor={(track) => bossForTrack(track.track)}
+            currentBossId={bossId}
+            onSelectBoss={setBossId}
           />
         </aside>
 
         <main className="min-w-0 flex-1 overflow-y-auto">
-          {lesson ? (
-            <LessonPlayer
-              key={lesson.id}
-              lesson={lesson}
-              onFinished={(next) => setLessonId(next ?? lesson.id)}
-            />
+          {boss ? (
+            <ErrorBoundary key={boss.id} what="this project">
+              <BossPlayer boss={boss} />
+            </ErrorBoundary>
+          ) : lesson ? (
+            <ErrorBoundary key={lesson.id} what="this lesson">
+              <LessonPlayer
+                lesson={lesson}
+                onFinished={(next) => setLessonId(next ?? lesson.id)}
+              />
+            </ErrorBoundary>
           ) : (
             <div className="px-8 py-16 text-parchment-400">Loading the course…</div>
           )}

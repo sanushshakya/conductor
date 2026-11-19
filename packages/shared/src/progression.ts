@@ -109,8 +109,14 @@ export function touchStreak(profile: Profile, now: Date): Profile {
   if (continues || forgiven) {
     const nextCurrent = current + 1
     const tokensAfterSpend = forgiven ? forgivenessTokens - 1 : forgivenessTokens
+    // Earned by a CLEAN week — `forgiven` is excluded, so a token cannot be
+    // handed back in the same step it was spent, which is what happened when
+    // the streak length alone decided it.
     const earnedToken =
-      tokensAfterSpend < MAX_FORGIVENESS_TOKENS && nextCurrent % TOKEN_REGRANT_DAYS === 1 && nextCurrent > 1
+      !forgiven &&
+      tokensAfterSpend < MAX_FORGIVENESS_TOKENS &&
+      nextCurrent % TOKEN_REGRANT_DAYS === 1 &&
+      nextCurrent > 1
     return {
       ...profile,
       streak: {
@@ -274,7 +280,59 @@ export function completeLesson(profile: Profile, lessonId: string): Profile {
   return withEarnedBadges(next)
 }
 
-/** Marks a duel won and awards duel XP. */
-export function recordDuelWin(profile: Profile): Profile {
-  return withEarnedBadges(awardXp({ ...profile, duelsWon: profile.duelsWon + 1 }, XP.duelWin))
+/**
+ * Marks a duel won and awards the XP the duel actually earned.
+ *
+ * `xp` is passed in rather than taken from `XP.duelWin` because the arena
+ * computes it from how cleanly the duel was won, and a constant here meant the
+ * learner was shown "+50 XP" and granted 40. The spec's position is that the
+ * progress bar cannot lie.
+ *
+ * `duelId` makes a win idempotent. Without it, the settled view — which has
+ * just highlighted the buggy line — plus "Try this one again" was ten clicks
+ * for a badge and 400 XP.
+ */
+export function recordDuelWin(profile: Profile, xp: number = XP.duelWin, duelId?: string): Profile {
+  if (duelId && profile.duelsWonIds.includes(duelId)) return profile
+
+  const next: Profile = {
+    ...profile,
+    duelsWon: profile.duelsWon + 1,
+    duelsWonIds: duelId ? [...profile.duelsWonIds, duelId] : profile.duelsWonIds,
+  }
+  return withEarnedBadges(awardXp(next, xp))
+}
+
+// ── boss projects ─────────────────────────────────────────────────────────
+
+export interface BossProgress {
+  passed: number
+  total: number
+  complete: boolean
+}
+
+/**
+ * How far through a boss the learner is.
+ *
+ * Each criterion is a real graded exercise, so the progress bar built on this
+ * cannot overstate anything — which is the point. A bar that moves for effort
+ * rather than for passing checks is a bar the learner learns to distrust.
+ */
+export function bossProgress(profile: Profile, exerciseIds: string[]): BossProgress {
+  const passed = exerciseIds.filter((id) => profile.exerciseResults[id]?.passed).length
+  return {
+    passed,
+    total: exerciseIds.length,
+    complete: exerciseIds.length > 0 && passed === exerciseIds.length,
+  }
+}
+
+/** Marks a boss project cleared, once, and awards its XP. */
+export function completeBoss(profile: Profile, bossId: string): Profile {
+  if (profile.completedBosses.includes(bossId)) return profile
+  const next = awardXp(
+    { ...profile, completedBosses: [...profile.completedBosses, bossId] },
+    XP.bossClear,
+  )
+  return withEarnedBadges(next)
 }

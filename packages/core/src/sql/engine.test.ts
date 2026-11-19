@@ -178,3 +178,34 @@ test('a fresh engine from the variant fixture holds different data', async () =>
   const other = await SqlEngine.create(variant)
   expect(other.exec('SELECT count(*) AS n FROM patients').tables[0]!.rows[0]![0]).toBe(41)
 })
+
+test('schema() returns an empty list when every table has been dropped', () => {
+  // Lesson 2.9 invites the learner to drop tables. Dropping the dependants
+  // first succeeds, and sqlite_master then returns zero rows — which sql.js
+  // reports as NO result set at all, not an empty one.
+  for (const table of ['prescriptions', 'appointments', 'patients', 'doctors', 'departments']) {
+    engine.exec(`DROP TABLE ${table}`)
+  }
+  expect(() => engine.schema()).not.toThrow()
+  expect(engine.schema()).toEqual([])
+})
+
+test('the engine still works after every table is dropped and reset', () => {
+  for (const table of ['prescriptions', 'appointments', 'patients', 'doctors', 'departments']) {
+    engine.exec(`DROP TABLE ${table}`)
+  }
+  engine.reset()
+  expect(engine.schema()).toHaveLength(5)
+  expect(engine.exec('SELECT count(*) AS n FROM patients').tables[0]!.rows[0]![0]).toBe(60)
+})
+
+test('a SELECT matching no rows reports ok with an empty result set, not no result set', () => {
+  // Several graders index tables[last]; a zero-row SELECT must still produce
+  // a table with its columns, or an exercise whose answer is "no rows" cannot
+  // be authored and the learner is told their SELECT was not a SELECT.
+  const r = engine.exec("SELECT full_name FROM patients WHERE full_name = 'Nobody At All'")
+  expect(r.ok).toBe(true)
+  expect(r.tables).toHaveLength(1)
+  expect(r.tables[0]!.rows).toEqual([])
+  expect(r.tables[0]!.columns).toEqual(['full_name'])
+})

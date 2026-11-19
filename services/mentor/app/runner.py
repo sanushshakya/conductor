@@ -26,6 +26,12 @@ from pydantic import BaseModel, Field
 #: to make its point.
 MAX_OUTPUT_BYTES = 256 * 1024
 
+#: The only variables a learner's program inherits. Enough for Python to run
+#: normally; nothing about this app, its mentor, or the rest of the machine.
+ENVIRONMENT_ALLOWLIST = frozenset(
+    {"PATH", "HOME", "LANG", "LC_ALL", "LC_CTYPE", "TMPDIR", "TEMP", "TMP", "SYSTEMROOT"}
+)
+
 DEFAULT_TIMEOUT_MS = 5_000
 MAX_TIMEOUT_MS = 15_000
 
@@ -117,13 +123,17 @@ def run_python(
         runner_path = os.path.join(workspace, "_conductor_sandbox.py")
         Path(runner_path).write_text(_sandbox_source(), encoding="utf-8")
 
+        # An ALLOWLIST, not a denylist.
+        #
+        # The sidecar inherits the whole Electron environment, which includes
+        # the mentor's API key and whatever else the learner's machine holds.
+        # A denylist has to be updated every time a configuration variable is
+        # added, and the one that gets forgotten is readable by learner code in
+        # a single line — code that, in Track 4, an agent wrote.
         environment = {
             key: value
             for key, value in os.environ.items()
-            # The session token authenticates the sidecar's own routes. Learner
-            # code has no business seeing it, and it is removed again inside the
-            # sandbox as a second line of defence.
-            if key not in {"CONDUCTOR_TOKEN"}
+            if key in ENVIRONMENT_ALLOWLIST
         }
         environment["PYTHONUNBUFFERED"] = "1"
         environment["PYTHONDONTWRITEBYTECODE"] = "1"
@@ -184,6 +194,7 @@ def run_python(
         stdout = stdout_reader.text()
         stderr = stderr_reader.text()
         stdout_truncated = stdout_reader.truncated
+        stderr_truncated = stderr_reader.truncated
 
         if killed == "timeout":
             stderr = (
@@ -191,7 +202,10 @@ def run_python(
                 f"{timeout_ms / 1000:.0f} seconds. A loop that never ends is the usual cause."
             ).strip()
 
-        if stdout_truncated:
+        if stdout_truncated or stderr_truncated:
+            # Both streams get the explanation. A learner whose error output
+            # was silently cut would be reading a traceback with the useful
+            # part missing and no hint that anything was removed.
             stderr = (
                 f"{stderr}\nThe output was truncated — this program printed more than a lesson shows."
             ).strip()

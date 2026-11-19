@@ -179,3 +179,23 @@ test('a health check that never passes is reported as failed, not left starting'
   expect(supervisor.status().state).toBe('failed')
   expect(supervisor.status().message).toMatch(/did not start|could not start/i)
 })
+
+test('an HTTP error from the sidecar is reported, not passed off as a result', async () => {
+  // A 422 body is {detail: ...}, which has no exitCode — the renderer used to
+  // treat it as a RunResult and print "undefinedundefined".
+  const d = deps({
+    fetch: async () => ({ ok: false, status: 422, json: async () => ({ detail: 'too long' }) }),
+  })
+  const supervisor = new SidecarSupervisor(d.deps)
+  await supervisor.start()
+  await expect(supervisor.request('/run/python', { method: 'POST' })).rejects.toThrow(/422/)
+})
+
+test('a successful response is returned unchanged', async () => {
+  const d = deps({
+    fetch: async () => ({ ok: true, status: 200, json: async () => ({ ok: true, stdout: 'hi' }) }),
+  })
+  const supervisor = new SidecarSupervisor(d.deps)
+  await supervisor.start()
+  expect(await supervisor.request('/run/python')).toEqual({ ok: true, stdout: 'hi' })
+})

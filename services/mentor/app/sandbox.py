@@ -50,21 +50,52 @@ def _limit_resources() -> None:
 
 
 def _block_network() -> None:
-    """Replace the socket layer with one that refuses.
+    """Refuse outbound connections at the lowest layer available.
 
     Lessons never need the network, and a beginner cannot audit what the code
-    an AI wrote for them is reaching out to. Blocking it at the bottom means
-    `requests`, `urllib` and everything else fail the same honest way.
+    an agent wrote for them reaches out to.
+
+    This patches the **C extension** `_socket`, not the pure-Python `socket`
+    wrapper. Patching the wrapper alone leaves two one-line escapes, both of
+    which an agent could plausibly produce:
+
+        import _socket                      # the wrapper was never involved
+        importlib.reload(socket)            # re-imports from _socket, undoing it
+
+    Because `socket.socket` IS `_socket.socket` and `socket.create_connection`
+    is built on it, blocking `connect` here closes the wrapper, the reload, and
+    everything layered above them — urllib, requests, httpx — in one place.
     """
+    import _socket
     import socket
 
     message = "Network access is not available inside a lesson."
 
-    class BlockedSocket(socket.socket):  # noqa: D401 - deliberately minimal
-        def __init__(self, *args, **kwargs):
-            raise OSError(message)
+    def _refuse_connect(self, *_args, **_kwargs):
+        raise OSError(message)
 
-    socket.socket = BlockedSocket  # type: ignore[misc, assignment]
+    # `_socket.socket` is an immutable C type, so its methods cannot be
+    # replaced. Swapping the NAME in the module for a refusing subclass works
+    # instead, and covers both remaining escapes:
+    #   import _socket            -> resolves to this subclass
+    #   importlib.reload(socket)  -> `class socket(_socket.socket)` re-reads
+    #                                the name, so the reload inherits the block
+    class BlockedRawSocket(_socket.socket):  # type: ignore[misc]
+        # Empty __slots__ keeps this a drop-in base. Without it the subclass
+        # gains a __weakref__ slot, and a later `class socket(_socket.socket)`
+        # — which is exactly what reloading the socket module does — dies with
+        # "__weakref__ slot disallowed" instead of refusing cleanly.
+        __slots__ = ()
+        connect = _refuse_connect
+        connect_ex = _refuse_connect
+
+    _socket.socket = BlockedRawSocket  # type: ignore[assignment]
+
+    # The already-imported `socket.socket` still derives from the ORIGINAL
+    # C type, so it needs the block applied directly. It is a Python class,
+    # so unlike its base it accepts the assignment.
+    socket.socket.connect = _refuse_connect  # type: ignore[assignment]
+    socket.socket.connect_ex = _refuse_connect  # type: ignore[assignment]
     socket.create_connection = _refuse(message)  # type: ignore[assignment]
     socket.create_server = _refuse(message)  # type: ignore[assignment]
 
@@ -99,10 +130,28 @@ def _print_learner_traceback(code_path: str) -> None:
         sys.stderr.write(line)
 
 
+def _install_thread_hook(code_path: str) -> None:
+    """Scrub the sandbox path out of failures raised off the main thread.
+
+    `_print_learner_traceback` only sees exceptions that reach the main
+    thread's except clause; a thread that dies goes through
+    `threading.excepthook` instead and would print the temp path plus the
+    interpreter's own threading.py.
+    """
+    import threading
+
+    def hook(args) -> None:
+        for line in traceback.format_exception(args.exc_type, args.exc_value, args.exc_traceback):
+            sys.stderr.write(line.replace(code_path, "your program"))
+
+    threading.excepthook = hook
+
+
 def run_learner_file(code_path: str) -> int:
     _limit_resources()
     _block_network()
     _clean_environment()
+    _install_thread_hook(code_path)
 
     with open(code_path, "r", encoding="utf-8") as handle:
         source = handle.read()
@@ -112,9 +161,13 @@ def run_learner_file(code_path: str) -> int:
     try:
         compiled = compile(source, code_path, "exec")
     except SyntaxError:
-        # Syntax errors have no traceback worth trimming; Python's own
-        # rendering already points at the offending line and column.
-        traceback.print_exc(limit=0)
+        # Python's own rendering of a SyntaxError includes the FILENAME, which
+        # here is a path like /var/folders/.../conductor-run-ab12/program.py.
+        # A syntax error is the most common thing a beginner produces, and
+        # lessons 0.3 and 1.7 are about reading errors — so the first error
+        # they are taught to read must not be full of this app's plumbing.
+        for line in traceback.format_exception_only(*sys.exc_info()[:2]):
+            sys.stderr.write(line.replace(code_path, "your program"))
         return 1
 
     try:
