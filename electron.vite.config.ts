@@ -23,7 +23,12 @@ export default defineConfig({
     },
   },
   preload: {
-    plugins: [externalizeDepsPlugin()],
+    // Deliberately NOT externalizeDepsPlugin: the window runs with
+    // `sandbox: true`, and a sandboxed preload may only require `electron`,
+    // `events`, `timers` and `url`. Leaving a dependency external means the
+    // preload throws on load, `contextBridge` never runs, and the renderer
+    // silently falls back to its browser host — the app looks fine while
+    // writing progress to localStorage and never reaching the sidecar.
     resolve: { alias: { '@conductor/shared': shared, '@conductor/core': core } },
     build: {
       lib: { entry: resolve(__dirname, 'apps/preload/src/index.ts') },
