@@ -7,6 +7,7 @@ import {
   type Track,
 } from '@conductor/shared'
 import { host, isDesktop } from './host'
+import { warmUpPython, pythonAvailable } from './python/run'
 import { useProfile } from './store/useProfile'
 import { orderedTracks, lessonById, resumeLesson, bossById, bossForTrack } from './content'
 import { isFirstRun } from '@conductor/shared'
@@ -32,6 +33,7 @@ export function App() {
   const [lessonId, setLessonId] = useState<string | null>(null)
   const [bossId, setBossId] = useState<string | null>(null)
   const [welcomed, setWelcomed] = useState(false)
+  const [pyodideReady, setPyodideReady] = useState(false)
   const { profile, loaded, load } = useProfile()
 
   useEffect(() => {
@@ -39,6 +41,21 @@ export function App() {
     void host().getSidecarStatus().then(setSidecar)
     return host().onSidecarStatus(setSidecar)
   }, [load])
+
+  // The browser build downloads ~11MB of CPython. Started now, in the
+  // background, so it is long finished by the time the learner reaches Track 1
+  // — Track 0 and the whole of the web track never need it.
+  useEffect(() => {
+    if (isDesktop()) return
+    warmUpPython()
+    const timer = setInterval(() => {
+      if (pythonAvailable()) {
+        setPyodideReady(true)
+        clearInterval(timer)
+      }
+    }, 400)
+    return () => clearInterval(timer)
+  }, [])
 
   // Open where they left off, rather than asking them to choose first.
   useEffect(() => {
@@ -51,8 +68,9 @@ export function App() {
   // blocks nothing — Track 0 is already loaded behind it.
   const showWelcome = loaded && !welcomed && isFirstRun(profile)
 
-  const caps = capabilities(sidecar)
-  const notice = capabilityNotice(sidecar)
+  const engines = { pyodide: pyodideReady }
+  const caps = capabilities(sidecar, engines)
+  const notice = capabilityNotice(sidecar, engines)
   const tracks = orderedTracks()
   const lesson = lessonId ? lessonById(lessonId) : undefined
   const boss = bossId ? bossById(bossId) : undefined

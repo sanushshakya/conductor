@@ -14,6 +14,7 @@ import { grade } from '@conductor/core'
 import { sqlEngineFor } from '../sql/useSqlEngine'
 import { SqlPlayground } from '../sql/SqlPlayground'
 import { runLearnerCode } from '../python/run'
+import { sampleInput } from '../python/sample-input'
 import { host } from '../host'
 
 export interface BeatProps {
@@ -253,8 +254,13 @@ function CodeExerciseBeat({
     setOutput(null)
   }
 
+  // Run feeds the program the lesson's first case, so a program that reads
+  // input() actually runs instead of stopping at EOFError, and so Run and
+  // "Check my answer" agree about what the program is being shown.
+  const sample = language === 'python' ? sampleInput(exercise) : undefined
+
   async function run() {
-    const outcome = await runLearnerCode(code)
+    const outcome = await runLearnerCode(code, sample?.stdin)
     setOutput({
       text: outcome.ok
         ? outcome.stdout || '(the program ran, but printed nothing)'
@@ -283,6 +289,11 @@ function CodeExerciseBeat({
         >
           Run
         </button>
+        {sample && (
+          <span className="text-xs text-parchment-400">
+            Run uses the input from {sample.label}
+          </span>
+        )}
         <button
           type="button"
           onClick={() => void submit(code)}

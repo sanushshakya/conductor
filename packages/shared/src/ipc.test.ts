@@ -1,5 +1,5 @@
 import { IPC } from './ipc'
-import { capabilities } from './capabilities'
+import { capabilities, capabilityNotice } from './capabilities'
 import { ProfileSchema, freshProfile } from './domain'
 
 test('IPC channel names are unique and namespaced', () => {
@@ -60,4 +60,30 @@ test('offline capabilities still allow the boot track and authored hints', () =>
   const caps = capabilities({ state: 'failed' })
   expect(caps.bootTrack).toBe(true)
   expect(caps.authoredHints).toBe(true)
+})
+
+test('Pyodide alone makes the Python track available', () => {
+  // The browser build has no sidecar at all, and must still open Track 1.
+  const caps = capabilities({ state: 'stopped' }, { pyodide: true })
+  expect(caps.pythonExec).toBe(true)
+  expect(caps.bootTrack).toBe(true)
+  expect(caps.sqlLessons).toBe(true)
+})
+
+test('Pyodide does not unlock API grading, which needs a local server', () => {
+  // A page served from a website cannot reach a server on the visitor's
+  // machine, so Track 4 stays a desktop feature however good the browser
+  // Python is.
+  expect(capabilities({ state: 'stopped' }, { pyodide: true }).apiGrading).toBe(false)
+})
+
+test('without either engine, Python stays unavailable', () => {
+  expect(capabilities({ state: 'stopped' }, { pyodide: false }).pythonExec).toBe(false)
+  expect(capabilities({ state: 'stopped' }).pythonExec).toBe(false)
+})
+
+test('the browser notice explains what works rather than what failed', () => {
+  const notice = capabilityNotice({ state: 'stopped' }, { pyodide: true })
+  expect(notice).toMatch(/browser/i)
+  expect(notice).not.toMatch(/fail|error|not running/i)
 })

@@ -17,3 +17,6 @@ services/mentor/.venv/
 # Generated declaration files; the only hand-written one is virtual-modules.d.ts
 apps/*/src/**/*.d.ts
 !apps/renderer/src/virtual-modules.d.ts
+
+# Pyodide runtime, copied from node_modules by scripts/sync-pyodide.mjs
+apps/renderer/public/pyodide/

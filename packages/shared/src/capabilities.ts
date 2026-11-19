@@ -23,20 +23,40 @@ export interface Capabilities {
   authoredHints: boolean
 }
 
-export function capabilities(status: SidecarStatus): Capabilities {
+/** Where Python can run, beyond the sidecar. */
+export interface LocalEngines {
+  /** Real CPython compiled to WebAssembly, used by the browser build. */
+  pyodide?: boolean
+}
+
+export function capabilities(status: SidecarStatus, local: LocalEngines = {}): Capabilities {
   const sidecarReady = status.state === 'ready'
+
   return {
     bootTrack: true,
     sqlLessons: true,
     authoredHints: true,
-    pythonExec: sidecarReady,
+
+    // Either real interpreter will do. The browser build has no sidecar and
+    // runs Pyodide instead, so Track 1 is fully available there.
+    pythonExec: sidecarReady || local.pyodide === true,
+
+    // Grading the learner's OWN server means making real HTTP requests to
+    // localhost, which only the desktop app can do — a page served from a
+    // website cannot reach a server on the visitor's machine.
     apiGrading: sidecarReady,
+
     liveMentor: sidecarReady,
   }
 }
 
 /** A one-line, non-technical explanation of what is currently unavailable. */
-export function capabilityNotice(status: SidecarStatus): string | null {
+export function capabilityNotice(status: SidecarStatus, local: LocalEngines = {}): string | null {
+  // Python is running, just not from a sidecar. Nothing to report.
+  if (local.pyodide === true && status.state !== 'ready') {
+    return 'Running in your browser. Everything works except the API track, which needs the desktop app.'
+  }
+
   switch (status.state) {
     case 'ready':
       return null

@@ -2,6 +2,7 @@ import { registerCheck } from '../index'
 import { lintContent } from '../lint-content'
 import { runAllSolutions } from '../run-solutions'
 import { checkFreshness } from '../check-freshness'
+import { checkEmbeddedPython } from '../embedded-python'
 
 registerCheck({
   name: 'content-schema',
@@ -48,6 +49,18 @@ registerCheck({
         ...report.missingDate.map((m) => `${m.lessonId} — volatile claim with no verified_on: "${m.excerpt}"`),
         ...report.future.map((f) => `${f.lessonId} — verified_on ${f.verifiedOn} is in the future`),
       ],
+    }
+  },
+})
+
+registerCheck({
+  name: 'embedded-python',
+  run() {
+    const report = checkEmbeddedPython()
+    return {
+      ok: report.ok,
+      summary: report.skipped ?? "the worker's embedded Python compiles",
+      failures: report.errors,
     }
   },
 })
