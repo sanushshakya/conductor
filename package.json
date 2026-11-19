@@ -24,7 +24,9 @@
     "harness": "tsx harness/cli.ts",
     "dev:web": "vite --config vite.web.config.ts",
     "build:web": "vite build --config vite.web.config.ts",
-    "package": "npm run build && ./scripts/build-sidecar.sh && electron-builder"
+    "package": "npm run build && ./scripts/build-sidecar.sh && electron-builder",
+    "predev": "node scripts/ensure-electron.mjs",
+    "prebuild": "node scripts/ensure-electron.mjs"
   },
   "devDependencies": {
     "@testing-library/dom": "^10.4.2",
