@@ -27,13 +27,20 @@ confident, broken `JOIN`. Finding it is the job. So every lesson runs:
 |---|---|
 | **0 · Boot** | Your first running program, in under 10 minutes |
 | **1 · Fundamentals** | The seven things every program does → a patient triage sorter |
-| **2 · SQL** | A real Hospital DBMS: five normalized tables, joins, transactions |
-| **3 · REST APIs** | Full CRUD over that schema, graded by real HTTP calls |
-| **4 · AI agents** | Ship a prototype with a free agent, then debug what it wrote |
-| **5 · Career** | The Tool Atlas, a portfolio from your capstones, next 90 days |
+| **2 · The Web** | HTML, CSS and JavaScript → a live ward board |
+| **3 · SQL** | A real Hospital DBMS: five normalised tables, joins, transactions |
+| **4 · REST APIs** | Full CRUD over that schema, graded by real HTTP calls |
+| **5 · Frontend** | React, TypeScript and Tailwind over your own API |
+| **6 · AI agents** | Ship a prototype with a free agent, then debug what it wrote |
+| **7 · Career** | The Tool Atlas, a portfolio from your capstones, next 90 days |
 
-Tracks 0–3 run with **no network connection**. Nothing here needs a
-subscription, ever.
+The order is deliberate. The web comes before databases so there is something
+to *look at* before there is something to persist; React comes after the API so
+there is a real backend to put an interface on — and after hand-writing the
+same screen in Track 2, so the learner has felt the problem React solves.
+
+Tracks 0, 2, 3 and 5 run entirely in the app, with **no Python and no network**.
+Nothing here needs a subscription, ever.
 
 ## Running it
 
@@ -56,7 +63,7 @@ npm run dev
 ```
 apps/main        Electron main process — windows, IPC, sidecar supervision
 apps/preload     the only bridge between renderer and main
-apps/renderer    React UI — lessons, SQL playground, visualizers, duels
+apps/renderer    React UI — lessons, SQL playground, web preview, duels
 services/mentor  Python FastAPI sidecar — code execution, hospital API, mentor
 content/         the curriculum, as validated data
 packages/shared  types and contracts shared across every boundary
