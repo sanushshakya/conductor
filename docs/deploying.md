@@ -20,6 +20,25 @@ That produces two directories, which go to **two different origins**:
 Any static host works: Netlify, Cloudflare Pages, GitHub Pages, Vercel, S3.
 Two sites on a free tier is enough.
 
+## Cloudflare Pages, in one command
+
+```bash
+nvm use              # Node 22
+npx wrangler login   # once, in your own browser
+NAME=conductor npm run deploy
+```
+
+`npm run deploy` creates both Pages projects, builds each side knowing the
+other's origin, and uploads them — preview first, so the app is never live
+pointing at an origin that does not answer yet. The sites land at
+`https://<NAME>.pages.dev` and `https://<NAME>-preview.pages.dev`.
+
+If the name is taken — Pages names are global — pick another:
+`NAME=conductor-course npm run deploy`.
+
+The login step is yours: the script refuses to run without it and never
+handles credentials.
+
 ## Why two origins
 
 This is the part that looks like overkill and is not.

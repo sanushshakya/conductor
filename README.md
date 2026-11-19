@@ -45,7 +45,7 @@ Nothing here needs a subscription, ever.
 ## Running it
 
 ```bash
-nvm use          # Node 22.12.0 (Electron 45 requires it)
+nvm use          # Node 22 (Electron 45 and Wrangler need >=22.12)
 npm install
 npm run dev
 ```

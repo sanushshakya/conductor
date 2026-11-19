@@ -27,7 +27,8 @@
     "package": "npm run build && ./scripts/build-sidecar.sh && electron-builder",
     "predev": "node scripts/ensure-electron.mjs",
     "prebuild": "node scripts/ensure-electron.mjs",
-    "postinstall": "node scripts/sync-pyodide.mjs"
+    "postinstall": "node scripts/sync-pyodide.mjs",
+    "deploy": "node scripts/deploy-pages.mjs"
   },
   "devDependencies": {
     "@testing-library/dom": "^10.4.2",
@@ -50,7 +51,8 @@
     "tsx": "^4.23.15",
     "typescript": "^5.5.4",
     "vite": "^5.4.21",
-    "vitest": "^2.1.9"
+    "vitest": "^2.1.9",
+    "wrangler": "^4.165.0"
   },
   "dependencies": {
     "framer-motion": "^11.18.2",
